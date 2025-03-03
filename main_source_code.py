@@ -14,9 +14,6 @@ from threading import Thread
 from traceback import format_exc
 from subprocess import Popen
 
-# pyinstaller -D -w --hidden-import queue -i C:\Users\57602\Desktop\MMS_Icon.png D:\MIDI-MCSTRUCTURE\MIDI-MCSTRUCTURE_V1.8.py
-# pyinstaller -D -w -i C:\Users\57602\Desktop\MMS_Icon.png D:\MIDI-MCSTRUCTURE\updater.py
-
 def asset_load():
     try:
         font.init()
