@@ -1,5 +1,5 @@
 from gc import collect
-from os import listdir, path, makedirs, getcwd
+from os import listdir, path, makedirs
 from sys import exit
 from json import load, dump, loads as load_bytes
 from mido import MidiFile, tick2second
@@ -14,49 +14,52 @@ from threading import Thread
 from traceback import format_exc
 from subprocess import Popen
 
+# pyinstaller -D -w --hidden-import queue -i C:\Users\57602\Desktop\MMS_Icon.png D:\MIDI-MCSTRUCTURE\MIDI-MCSTRUCTURE_V1.8.py
+# pyinstaller -D -w -i C:\Users\57602\Desktop\MMS_Icon.png D:\MIDI-MCSTRUCTURE\updater.py
+
 def asset_load():
     try:
         font.init()
-        asset_list["font"] = font.Font("Asset/font/font.ttf", 28)
+        asset_list["font"] = font.Font(state[8] + "/Asset/font/font.ttf", 28)
         state[2] = "更新程序中"
-        if path.isfile("Cache/updater.exe"):
-            move("Cache/updater.exe", "updater.exe")
-            rmtree("Cache")
+        if path.isdir(state[8] + "/Cache/Updater"):
+            move(state[8] + "/Cache/Updater", state[8] + "Updater")
+            rmtree(state[8] + "/Cache")
         state[2] = "加载图片中"
-        asset_list["menu_pic"] = image.load("Asset/image/menu_background.png")
+        asset_list["menu_pic"] = image.load(state[8] + "/Asset/image/menu_background.png")
         asset_list["menu_pic"] = transform.smoothscale(asset_list["menu_pic"], DisplaySize).convert_alpha()
-        asset_list["file_pic"] = image.load("Asset/image/file.png")
+        asset_list["file_pic"] = image.load(state[8] + "/Asset/image/file.png")
         asset_list["file_pic"] = transform.smoothscale(asset_list["file_pic"], (
         DisplaySize[0] * 0.025, DisplaySize[1] * 0.0625)).convert_alpha()
-        asset_list["set_pic"] = image.load("Asset/image/setting_background.png")
+        asset_list["set_pic"] = image.load(state[8] + "/Asset/image/setting_background.png")
         asset_list["set_pic"] = transform.smoothscale(asset_list["set_pic"], (
         DisplaySize[0] * 0.98, DisplaySize[1] * 0.099)).convert_alpha()
-        asset_list["msg_pic"] = image.load("Asset/image/message_background.png")
+        asset_list["msg_pic"] = image.load(state[8] + "/Asset/image/message_background.png")
         asset_list["msg_pic"] = transform.smoothscale(asset_list["msg_pic"], (
         DisplaySize[0], DisplaySize[1] * 0.1)).convert_alpha()
-        asset_list["setting_pic"] = image.load("Asset/image/setting.png")
+        asset_list["setting_pic"] = image.load(state[8] + "/Asset/image/setting.png")
         asset_list["setting_pic"] = transform.smoothscale(asset_list["setting_pic"], (
         DisplaySize[0] * 0.025, DisplaySize[1] * 0.0625)).convert_alpha()
-        asset_list["start_pic"] = image.load("Asset/image/start.png")
+        asset_list["start_pic"] = image.load(state[8] + "/Asset/image/start.png")
         asset_list["start_pic"] = transform.smoothscale(asset_list["start_pic"], (
         DisplaySize[0] * 0.025, DisplaySize[1] * 0.0625)).convert_alpha()
-        asset_list["midi_pic"] = image.load("Asset/image/midi.png")
+        asset_list["midi_pic"] = image.load(state[8] + "/Asset/image/midi.png")
         asset_list["midi_pic"] = transform.smoothscale(asset_list["midi_pic"], (
         DisplaySize[0] * 0.025, DisplaySize[1] * 0.0625)).convert_alpha()
-        asset_list["update_pic"] = image.load("Asset/image/update.png")
+        asset_list["update_pic"] = image.load(state[8] + "/Asset/image/update.png")
         asset_list["update_pic"] = transform.smoothscale(asset_list["update_pic"], (
         DisplaySize[0] * 0.025, DisplaySize[1] * 0.0625)).convert_alpha()
-        asset_list["info_pic"] = image.load("Asset/image/information.png")
+        asset_list["info_pic"] = image.load(state[8] + "/Asset/image/information.png")
         asset_list["info_pic"] = transform.smoothscale(asset_list["info_pic"], (
         DisplaySize[0] * 0.025, DisplaySize[1] * 0.0625)).convert_alpha()
-        asset_list["err_pic"] = image.load("Asset/image/error.png")
+        asset_list["err_pic"] = image.load(state[8] + "/Asset/image/error.png")
         asset_list["err_pic"] = transform.smoothscale(asset_list["err_pic"], (
         DisplaySize[0] * 0.025, DisplaySize[1] * 0.0625)).convert_alpha()
-        asset_list["default_pic"] = image.load("Asset/image/default.png")
+        asset_list["default_pic"] = image.load(state[8] + "/Asset/image/default.png")
         asset_list["default_pic"] = transform.smoothscale(asset_list["default_pic"], (
         DisplaySize[0] * 0.025, DisplaySize[1] * 0.0625)).convert_alpha()
         state[2] = "加载设置中"
-        with open("Asset/text/setting.json", "r") as settings:
+        with open(state[8] + "/Asset/text/setting.json", "r") as settings:
             asset_list["setting"] = load(settings)
         asset_list["fps"] = asset_list["setting"]["setting"]["fps"]
         state[3][0] = int(asset_list["setting"]["setting"]["auto_gain"])
@@ -67,18 +70,18 @@ def asset_load():
         state[3][6] = bool(asset_list["setting"]["setting"]["append_number"])
         state[3][7] = int(asset_list["setting"]["setting"]["file_type"])
         log[0][1] = bool(asset_list["setting"]["setting"]["log_level"])
-        with open("Asset/text/manifest.json", "r") as manifest:
+        with open(state[8] + "/Asset/text/manifest.json", "r") as manifest:
             asset_list["manifest"] = dumps(load(manifest))
         state[2] = "加载模板中"
         asset_list["structure_file"] = []
-        for n in listdir("Asset/text"):
+        for n in listdir(state[8] + "/Asset/text"):
             if path.splitext(n)[1] == ".mcstructure":
                 Thread(target=structure_load, args=[n]).start()
         if asset_list["setting"]["setting"]["id"] == -1:
             asset_list["setting"]["setting"]["id"] = 0
             message_list.append(("使用键盘的TAB键或鼠标的中键查看帮助。", -1))
         else:
-            message_list.append(("欢迎使用 MIDI-MCSTRUCTURE " + asset_list["setting"]["setting"]["version"], -1))
+            message_list.append(("欢迎使用 MIDI-MCSTRUCTURE " + asset_list["setting"]["setting"]["version"][:-1], -1))
         state[2] = "done"
     except Exception:
         save_log(1, "E:", format_exc())
@@ -90,7 +93,7 @@ def asset_load():
             state[0] = 2
 
 def structure_load(n):
-    with open("Asset/text/" + n, "rb") as structure:
+    with open(state[8] + "/Asset/text/" + n, "rb") as structure:
         structure = NBTFile(structure, little_endian=True)
     i = [dumps(structure),
          str(structure["size"][0].value) +
@@ -448,7 +451,7 @@ def save_json():
         asset_list["setting"]["setting"]["mode"] = state[3][5]
         asset_list["setting"]["setting"]["append_number"] = int(state[3][6])
         asset_list["setting"]["setting"]["file_type"] = state[3][7]
-        with open("Asset/text/setting.json", "w") as settings:
+        with open(state[8] + "/Asset/text/setting.json", "w") as settings:
             dump(asset_list["setting"], settings)
     except Exception:
         save_log(5, "E:", format_exc())
@@ -461,7 +464,7 @@ def get_update_log():
             if int(n["version"]) < int(i["version"]):
                 n = i
         del update_log
-        if int(n["version"]) > int(asset_list["setting"]["setting"]["version"]):
+        if n["version"] not in asset_list["setting"]["setting"]["exceptional_version"] and int(n["version"]) > int(asset_list["setting"]["setting"]["version"]):
             state[5] = n
     except Exception:
         save_log(4, "E:", format_exc())
@@ -470,13 +473,13 @@ def get_update_log():
 
 def download():
     try:
-        if path.exists("Asset/update"):
-            rmtree("Asset/update")
-        makedirs("Asset/update")
+        if path.exists(state[8] + "/Asset/update"):
+            rmtree(state[8] + "/Asset/update")
+        makedirs(state[8] + "/Asset/update")
         state[6][0] = 0
         response = get(state[5]["download_url"], stream=True)
         state[6][1] = int(response.headers['content-length'])
-        with open("Asset/update/package.zip", 'ab') as io:
+        with open(state[8] + "/Asset/update/package.zip", 'ab') as io:
             for chunk in response.iter_content(chunk_size=1024):
                 io.write(chunk)
                 state[6][0] += len(chunk)
@@ -608,6 +611,13 @@ def next_page():
         if state[6][2] and state[1][0] == 0:
             Thread(target=download).start()
             state[6][2] = False
+        elif state[1][0] == 1:
+            asset_list["setting"]["setting"]["exceptional_version"].append(state[5]["version"])
+            state[0] = 3
+            state[1] = page[-1]
+            del page[-1]
+            state[5] = None
+            message_list.append(("已忽略此次更新。", -1))
 
 def last_page():
     if state[0] == 3:
@@ -742,11 +752,12 @@ def setting_blit(setting):
         window.blit(to_alpha(asset_list["font"].render(b[0], True, (255, 255, 255)), color[0]), (DisplaySize[0] * 0.065, a * 39 + DisplaySize[1] * 0.044))
 
 log = [[False, True], ["Loading:"], ["Main:"], ["Convertor:"], ["Updater:"], ["Other:"]]
+state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0], False, None, [0, 0, True], False, path.split(path.realpath(__file__))[0]]
 
 try:
     display.init()
     DisplaySize = (800, 450)
-    display.set_icon(image.load("Asset/image/icon.png"))
+    display.set_icon(image.load(state[8] + "/Asset/image/icon.png"))
     window = display.set_mode(DisplaySize)
     display.set_caption("MIDI-MCSTRUCTURE GUI")
 
@@ -761,7 +772,6 @@ try:
     press_time = 0
     message_time = 0
     real_position = 0
-    state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0], False, None, [0, 0, True], False]
 
     clock = time.Clock()
 
@@ -808,7 +818,6 @@ try:
                 if env.key == K_RIGHT:
                     next_page()
         if state[7] and len(message_list) == 0:
-            Popen(getcwd() + "\\updater.exe")
             exit()
         speed = clock.get_fps()
         if speed > 10:
@@ -818,7 +827,7 @@ try:
         if state[0] == 0:
             Thread(target=asset_load).start()
             Thread(target=get_update_log).start()
-            asset_list["load_pic"] = image.load("Asset/image/loading.png")
+            asset_list["load_pic"] = image.load(state[8] + "/Asset/image/loading.png")
             asset_list["load_pic"] = transform.scale(asset_list["load_pic"], DisplaySize).convert_alpha()
             state[0] = 1
         elif state[0] == 1:
@@ -842,11 +851,14 @@ try:
                 else:
                     setting_text.append((c, 0))
             if len(page) == 0 and not state[5] is None:
-                setting_text.append(["发现新版本 V" + str(state[5]["version"])[:-1], 6])
-                if str(state[5]["version"])[-1] == "1":
+                if state[6][0] == 0:
+                    setting_text.append(["发现更新 V" + str(state[5]["version"])[:-1], 6])
+                else:
+                    setting_text.append(["正在下载 V" + str(state[5]["version"])[:-1], 6])
+                if str(state[5]["version"])[-1] == "9":
                     setting_text[-1][0] += "REL"
                 else:
-                    setting_text[-1][0] += "DEV"
+                    setting_text[-1][0] += "DEV-" + str(state[5]["version"])[-1]
             setting_blit(setting_text)
         elif state[0] == 4:
             window.blit(asset_list["menu_pic"], (0, 0))
@@ -899,15 +911,18 @@ try:
             window.blit(asset_list["menu_pic"], (0, 0))
             if state[6][1] == 0:
                 setting_text = [["立即更新  V", 2]]
+            elif state[6][0] == state[6][1]:
+                setting_text = [["即将更新  V", 2]]
             else:
                 setting_text = [["正在下载  V", 2]]
+            setting_text.append(["忽略更新", 1])
             setting_text[0][0] += str(state[5]["version"])[:-1]
-            if str(state[5]["version"])[-1] == "1":
+            if str(state[5]["version"])[-1] == "9":
                 setting_text[0][0] += "REL"
             else:
-                setting_text[0][0] += "DEV"
-            if state[6][1] != 0:
-                setting_text[0][0] += "  [" + str(round(state[6][0] / 1048576, 2)) + "/" + str(round(state[6][1] / 1048576, 2)) + "MB]"
+                setting_text[0][0] += "DEV-" + str(state[5]["version"])[-1]
+            if state[6][0] != state[6][1]:
+                setting_text[0][0] += "   " + str(round(state[6][0] / 1048576, 2)) + "/" + str(round(state[6][1] / 1048576, 2)) + "MB"
             setting_text += state[5]["feature"]
             setting_blit(setting_text)
         if state[0] != 0:
@@ -931,7 +946,7 @@ finally:
     if not log[0][0]:
         save_json()
     if log[0][0] and log[0][1]:
-        with open("log.txt", "a") as file:
+        with open(state[8] + "/log.txt", "a") as file:
             for texts in log[1:]:
                 if len(texts) == 1:
                     texts.append("None")
@@ -939,3 +954,5 @@ finally:
                     if m != 0:
                         text = "  " + text
                     file.write(str(text) + "\n")
+    if state[7]:
+        Popen(state[8] + "/Updater/updater.exe")
