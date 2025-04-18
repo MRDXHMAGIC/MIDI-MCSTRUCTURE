@@ -1,5 +1,5 @@
 from gc import collect
-from os import listdir, path, makedirs
+from os import listdir, path, makedirs, _exit
 from sys import exit
 from PIL import Image, ImageFilter
 from time import sleep
@@ -10,7 +10,7 @@ from serial import Serial
 from shutil import rmtree, move
 from pickle import loads, dumps
 from random import randint
-from pygame import display, time, font, image, transform, event, Surface, QUIT, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYUP, K_TAB, MOUSEBUTTONDOWN, BLEND_RGBA_MULT, SRCALPHA
+from pygame import display, time, font, image, transform, event, Surface, QUIT, K_UP, K_DOWN, K_LEFT, K_RIGHT, K_ESCAPE, KEYUP, K_TAB, mouse, MOUSEBUTTONUP, MOUSEBUTTONDOWN, BLEND_RGBA_MULT, SRCALPHA
 from hashlib import md5
 from requests import get
 from win32api import GetLogicalDriveStrings
@@ -20,16 +20,15 @@ from subprocess import Popen
 from serial.serialutil import PARITY_EVEN
 import serial.tools.list_ports
 
+
 def asset_load():
     try:
         font.init()
         asset_list["font"] = font.Font("Asset/font/font.ttf", 28)
-        state[2] = "更新程序中"
+        state[2] = "完成更新中"
         if path.isdir("Cache/Updater"):
             n = 0
             while n <= 16:
-                if state[9]:
-                    exit()
                 try:
                     if path.isdir("Updater"):
                         rmtree("Updater")
@@ -86,7 +85,7 @@ def asset_load():
         asset_list["progress_bar"] = transform.smoothscale(asset_list["progress_bar"], (2, 20)).convert_alpha()
         state[2] = "加载结构模板中"
         asset_list["structure_file"] = []
-        for n in listdir("Asset/text"):
+        for n in listdir("Asset/mcstructure"):
             if path.splitext(n)[1] == ".mcstructure":
                 Thread(target=structure_load, args=[n]).start()
         with open("Asset/text/manifest.json", "r") as manifest:
@@ -95,7 +94,7 @@ def asset_load():
             asset_list["setting"]["setting"]["id"] = 0
             message_list.append(("使用键盘的TAB键或鼠标的中键查看帮助。", -1))
         else:
-            message_list.append(("欢迎使用 MIDI-MCSTRUCTURE " + asset_list["setting"]["setting"]["version"][:-1], -1))
+            message_list.append(("欢迎使用 MIDI-MCSTRUCTURE V" + asset_list["setting"]["setting"]["version"] + "-" + asset_list["setting"]["setting"]["edition"], -1))
         state[2] = "done"
     except Exception:
         save_log(1, "E:", format_exc())
@@ -107,10 +106,8 @@ def asset_load():
             state[0] = 2
 
 def structure_load(n):
-    with open("Asset/text/" + n, "rb") as structure:
+    with open("Asset/mcstructure/" + n, "rb") as structure:
         structure = NBTFile(structure, little_endian=True)
-    if state[9]:
-        exit()
     i = [dumps(structure),
          str(structure["size"][0].value) +
          "*" + str(structure["size"][2].value) +
@@ -492,8 +489,6 @@ def convertor(midi_path, midi_name, cvt_setting):
                         break
                 tick_time = source_time
             for n in range(h, -1, -1):
-                if state[9]:
-                    exit()
                 if n not in del_list:
                     if str(n) in structure["structure"]["palette"]["default"]["block_position_data"]:
                         del structure["structure"]["palette"]["default"]["block_position_data"][str(n)]
@@ -544,8 +539,6 @@ def convertor(midi_path, midi_name, cvt_setting):
                         tick_time = 0
                         for source_time in time_list:
                             for n, cmd in enumerate(note_buffer[source_time]):
-                                if state[9]:
-                                    exit()
                                 if n == 0:
                                     output_time = source_time - tick_time
                                 else:
@@ -584,17 +577,20 @@ def convertor(midi_path, midi_name, cvt_setting):
             message_list.append((midi_name[0:-4] + " 转换失败", task_id))
 
 def progress_bar(mess_id, title, pss, tal):
-    if len(message_list) != 0 and message_list[0][1] == mess_id:
-        if pss == tal:
-            if len(message_list) > 1 and message_list[1][1] == mess_id:
-                state[8][0] = 3250
+    try:
+        if len(message_list) != 0 and message_list[0][1] == mess_id:
+            if pss == tal:
+                if len(message_list) > 1 and message_list[1][1] == mess_id:
+                    state[8][0] = 3250
+                else:
+                    state[8][0] = 3000
             else:
-                state[8][0] = 3000
-        else:
-            message_list[0][0] ="[" + str(int((pss / tal) * 100)) + "%] " + title
-            state[8][0] = 0
-    elif len(message_list) == 0:
-        message_list.append(["[" + str(int((pss / tal) * 100)) + "%] " + title, mess_id])
+                message_list[0][0] ="[" + str(int((pss / tal) * 100)) + "%] " + title
+                state[8][0] = 0
+        elif len(message_list) == 0:
+            message_list.append(["[" + str(int((pss / tal) * 100)) + "%] " + title, mess_id])
+    except Exception:
+        pass
 
 def save_log(log_pos, log_type, log_info):
     if log[0][1]:
@@ -632,7 +628,7 @@ def get_update_log():
         update_log = load_bytes(get("https://gitee.com/mrdxhmagic/midi-mcstructure/raw/master/Update.json").content)
         n = {"version": 0}
         for i in update_log:
-            if int(n["version"]) < int(i["version"]):
+            if len(str(i["version"])) == 8 and int(n["version"]) < int(i["version"]):
                 n = i
         del update_log
         if n["version"] not in asset_list["setting"]["setting"]["exceptional_version"] and int(n["version"]) > int(asset_list["setting"]["setting"]["version"]):
@@ -652,8 +648,6 @@ def download():
         state[6][1] = int(response.headers['content-length'])
         with open("Asset/update/package.zip", 'ab') as io:
             for chunk in response.iter_content(chunk_size=1024):
-                if state[9]:
-                    exit()
                 io.write(chunk)
                 state[6][0] += len(chunk)
         message_list.append(("下载完成，即将进行更新。", -1))
@@ -902,8 +896,8 @@ def setting_blit(setting):
             state[8][1] -= (state[8][1] - 450) * speed
         else:
             state[8][1] -= (state[8][1] - 405) * speed
-        if state[8][1] < DisplaySize[1]:
-            title_alpha = (DisplaySize[1] - state[8][1]) / 45
+        if state[8][1] < 450:
+            title_alpha = (450 - state[8][1]) / 45
         blur_surface = to_alpha(asset_list["menu_pic"].copy(), (255, 255, 255, 0), asset_list["blur_pic"][2], (0, state[8][1]))
     else:
         blur_surface = asset_list["menu_pic"].copy()
@@ -911,14 +905,27 @@ def setting_blit(setting):
     file_offset = 0
     setting_num = len(setting)
     if setting_num >= 10:
-        progress_bar_position -= (progress_bar_position - (state[1][0] / (setting_num - 1)) * 430) * speed
+        if state[9] != -1 and state[1][0] > round((setting_num - 1) * state[9]):
+            state[1][2] = state[1][0]
+            state[1][0] -= 1
+            if state[1][1] > 0:
+                state[1][1] -= 1
+        elif state[9] != -1 and state[1][0] < round((setting_num - 1) * state[9]):
+            state[1][2] = state[1][0]
+            state[1][0] += 1
+            if state[1][1] < 9:
+                state[1][1] += 1
+        expect_position = int((state[1][0] / (setting_num - 1)) * 430)
+        if progress_bar_position < -25 and expect_position > 215:
+            progress_bar_position = 480
+        progress_bar_position -= (progress_bar_position - expect_position) * speed
     else:
-        if progress_bar_position <= 225:
-            progress_bar_position -= (progress_bar_position + 30) * speed
-        else:
+        if progress_bar_position > 215:
             progress_bar_position -= (progress_bar_position - 480) * speed
             if progress_bar_position > 475:
                 progress_bar_position = -30
+        else:
+            progress_bar_position -= (progress_bar_position + 30) * speed
     blur_surface = to_alpha(blur_surface, (255, 255, 255, 0), (2, 20), (0, progress_bar_position))
     if setting_num == 0:
         state[1] = [0, 0, -1]
@@ -994,7 +1001,7 @@ def setting_blit(setting):
             del message_list[0]
 
 log = [[False, True], ["Loading:"], ["Main:"], ["Convertor:"], ["Updater:"], ["Other:"]]
-state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0, 0, 0], False, None, [0, 0, True], False, [0, 0], False]
+state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0, 0, 0], False, None, [0, 0, True], False, [0, 0], -1]
 
 try:
     display.init()
@@ -1004,6 +1011,7 @@ try:
     display.set_caption("MIDI-MCSTRUCTURE GUI")
 
     page = []
+    state[8][1] = DisplaySize[1]
     file_path = []
     real_path = []
     midi_file = []
@@ -1012,19 +1020,28 @@ try:
     task_id = 0
     press_time = 0
     real_position = 0
-    state[8][1] = DisplaySize[1]
+    mouse_inputting = False
     progress_bar_position = 0
 
     clock = time.Clock()
 
     while True:
+        if state[7] and len(message_list) == 0:
+            exit()
         for env in event.get():
             if env.type == QUIT:
                 exit()
             if env.type == MOUSEBUTTONDOWN:
+                if env.button == 1:
+                    if mouse.get_pos()[0] <= 10:
+                        mouse_inputting = True
+            if env.type == MOUSEBUTTONUP:
                 state[4] = True
                 if env.button == 1:
-                    next_page()
+                    if not mouse_inputting:
+                        next_page()
+                    else:
+                        mouse_inputting = False
                 if env.button == 2:
                     setting_help()
                 if env.button == 3:
@@ -1048,7 +1065,7 @@ try:
                 if env.key == K_DOWN:
                     state[1][2] = state[1][0]
                     state[1][0] += 1
-                    if state[1][1] < 10:
+                    if state[1][1] < 9:
                         state[1][1] += 1
                 if env.key == K_UP:
                     state[1][2] = state[1][0]
@@ -1059,8 +1076,14 @@ try:
                     last_page()
                 if env.key == K_RIGHT:
                     next_page()
-        if state[7] and len(message_list) == 0:
-            exit()
+        if mouse_inputting:
+            state[9] = mouse.get_pos()[1] / 450
+            if state[9] > 1:
+                state[9] = 1
+            elif state[9] < 0:
+                state[9] = 0
+        else:
+            state[9] = -1
         speed = clock.get_fps()
         if speed > 10:
             speed = 10 / speed
@@ -1094,13 +1117,9 @@ try:
                     setting_text.append((c, 0))
             if len(page) == 0 and not state[5] is None:
                 if state[6][0] == 0:
-                    setting_text.append(["发现更新 V" + str(state[5]["version"])[:-1], 6])
+                    setting_text.append(["发现更新 V" + str(state[5]["version"]) + "-" + str(state[5]["edition"]), 6])
                 else:
-                    setting_text.append(["正在下载 V" + str(state[5]["version"])[:-1], 6])
-                if str(state[5]["version"])[-1] == "9":
-                    setting_text[-1][0] += "REL"
-                else:
-                    setting_text[-1][0] += "DEV-" + str(state[5]["version"])[-1]
+                    setting_text.append(["正在下载 V" + str(state[5]["version"]) + "-" + str(state[5]["edition"]), 6])
             setting_blit(setting_text)
         elif state[0] == 4:
             window.blit(asset_list["blur_pic"][0], (0, 0))
@@ -1143,11 +1162,11 @@ try:
             if state[3][7] == 0:
                 setting_text[7][0] += ".mcstructure"
             elif state[3][7] == 1:
-                setting_text[7][0] += ".mcfunction(BedrockEdition)"
+                setting_text[7][0] += ".mcfunction (BE)"
                 if state[3][5] == 0:
                     setting_text[5][1] = 4
             elif state[3][7] == 2:
-                setting_text[7][0] += ".mcfunction(JavaEdition)"
+                setting_text[7][0] += ".mcfunction (JE)"
                 if state[3][5] == 0:
                     setting_text[5][1] = 4
                 if state[3][9] == 0:
@@ -1157,11 +1176,11 @@ try:
             if asset_list.get("structure_file"):
                 setting_text[8][0] += asset_list["structure_file"][state[3][1]][1]
             if state[3][9] == 0:
-                setting_text[9][0] += "直出 (BedrockEdition)"
+                setting_text[9][0] += "直出 (BE)"
             elif state[3][9] == 1:
-                setting_text[9][0] += "限幅 (JavaEdition)"
+                setting_text[9][0] += "限幅 (JE)"
             elif state[3][9] == 2:
-                setting_text[9][0] += "自动 (JavaEdition)"
+                setting_text[9][0] += "自动 (JE)"
             if len(asset_list["serial_list"]) != 0:
                 setting_text[10][0] += asset_list["serial_list"][state[3][8]][1]
             setting_blit(setting_text)
@@ -1174,11 +1193,7 @@ try:
             else:
                 setting_text = [["正在下载  V", 2]]
             setting_text.append(["忽略更新", 1])
-            setting_text[0][0] += str(state[5]["version"])[:-1]
-            if str(state[5]["version"])[-1] == "9":
-                setting_text[0][0] += "REL"
-            else:
-                setting_text[0][0] += "DEV-" + str(state[5]["version"])[-1]
+            setting_text[0][0] += str(state[5]["version"]) + "-" + str(state[5]["edition"])
             if state[6][0] != state[6][1]:
                 setting_text[0][0] += "   " + str(round(state[6][0] / 1048576, 2)) + "/" + str(round(state[6][1] / 1048576, 2)) + "MB"
             setting_text += state[5]["feature"]
@@ -1188,7 +1203,6 @@ try:
 except Exception:
         save_log(2, "E:", format_exc())
 finally:
-    state[9] = True
     if not log[0][0]:
         save_json()
     if log[0][0] and log[0][1]:
@@ -1203,3 +1217,4 @@ finally:
     if state[7]:
         sleep(1)
         Popen("Updater/updater.exe")
+    _exit(0)
