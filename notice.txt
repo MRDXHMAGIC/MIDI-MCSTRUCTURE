@@ -1,4 +1,4 @@
-本软件使用MIT No Attribution协议开源！
+欢迎使用，本软件使用MIT No Attribution协议开源！
 
 
 以下为本软件使用的第三方库
@@ -9,8 +9,8 @@ pynbt 用于处理nbt文件
 serial 用于连接MMS串口设备
 pygame 用于图形化界面
 requests 用于联网功能
-win32api 用于获取盘符
+win32api 用于获取Windows盘符
 traceback 用于生成错误日志
 
 
-MIDI-MCSTRUCTURE   Copyright 2025 MRDXHMAGIC.
+MIDI-MCSTRUCTURE V2        Copyright 2025 MRDXHMAGIC.
