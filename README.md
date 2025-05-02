@@ -24,3 +24,5 @@ MIDI转我的世界基岩版mcstructure，Java版或基岩版mcfunction。
 
 5. 播放模式
 共有三种模式，分别为命令链延迟(delay)、计分板时钟(clock)和时钟与编号(address)。
+
+
