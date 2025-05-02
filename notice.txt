@@ -13,4 +13,4 @@ win32api 用于获取Windows盘符
 traceback 用于生成错误日志
 
 
-MIDI-MCSTRUCTURE V2        Copyright 2025 MRDXHMAGIC.
+MIDI-MCSTRUCTURE V2                Copyright 2025 MRDXHMAGIC.
