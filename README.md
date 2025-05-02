@@ -1,5 +1,5 @@
 # MIDI-MCSTRUCTURE
-
+![MMS Icon](MMS_Icon.png)
 
 #### 介绍
 MIDI转我的世界基岩版mcstructure，Java版或基岩版mcfunction。
