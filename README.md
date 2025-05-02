@@ -32,7 +32,7 @@ MIDI转我的世界基岩版mcstructure，Java版或基岩版mcfunction。
 | 时钟与编号 | 在计分板时钟基础上，为每次分配一个不重复的ID | 易控制播放，支持多人 | 高卡顿    |
 
 补充：
-MIDI-MCSTRUCUTRE支持自定义命令，修改配置文件(setting.json)的内容即可更改指令。
+MIDI-MCSTRUCUTRE支持自定义命令，修改配置文件([setting.json](https://gitee.com/mrdxhmagic/midi-mcstructure/raw/master/Asset/text/setting.json))的内容即可更改指令。
 默认指令（使用基岩版举例）如下：
 
 ```
