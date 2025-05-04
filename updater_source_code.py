@@ -39,7 +39,7 @@ try:
         new_setting = load(io)
     save_log(1, "", "Copy Settings:")
     for k in list(old_setting["setting"].keys()):
-        if k in new_setting["setting"] and k not in ("version", "edition", "background_hash"):
+        if k in new_setting["setting"] and k not in ("version", "edition", "color", "background_hash"):
             save_log(1, "", "  " + str(k) + ": " + str(old_setting["setting"][k]) + " -> " + str(new_setting["setting"][k]))
             new_setting["setting"][k] = old_setting["setting"][k]
     save_log(1, "", "Save Settings")
