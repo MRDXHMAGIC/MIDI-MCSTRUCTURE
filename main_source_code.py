@@ -247,7 +247,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                     if velocity != 0:
                         if channel not in info_list:
                             info_list[channel] = {"program": [], "volume": [], "balance": []}
-                        if cvt_setting[9] != 0:
+                        if cvt_setting[9] != 0 and channel != 9:
                             volume = 1
                             for vol in info_list[channel]["volume"]:
                                 if vol[0] > source_time:
@@ -598,7 +598,7 @@ def convertor(midi_path, midi_name, cvt_setting):
         save_log(3, "E:", format_exc())
     finally:
         if convertor_state:
-            message_list.append((midi_name[0:-4] + " 转换完成", task_id))
+            message_list.append(("转换完成，文件已保存在程序运行目录下！", task_id))
         else:
             message_list.append((midi_name[0:-4] + " 转换失败", task_id))
 
