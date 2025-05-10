@@ -7,7 +7,6 @@ from hashlib import md5
 from traceback import format_exc
 from subprocess import Popen
 
-
 def save_log(log_position, log_type, log_info):
     if log[0][1]:
         log[0][0] = True
@@ -39,7 +38,7 @@ try:
         new_setting = load(io)
     save_log(1, "", "Copy Settings:")
     for k in list(old_setting["setting"].keys()):
-        if k in new_setting["setting"] and k not in ("version", "edition", "color", "background_hash"):
+        if k in new_setting["setting"] and k not in ("version", "edition", "color", "background_hash", "exceptional_version"):
             save_log(1, "", "  " + str(k) + ": " + str(old_setting["setting"][k]) + " -> " + str(new_setting["setting"][k]))
             new_setting["setting"][k] = old_setting["setting"][k]
     save_log(1, "", "Save Settings")
