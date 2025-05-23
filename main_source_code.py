@@ -1,9 +1,8 @@
 from gc import collect
 from os import listdir, path, makedirs, _exit
-from sys import exit
 from PIL import Image, ImageFilter
 from time import sleep
-from json import load, dump, loads as load_bytes
+from json import loads as load_bytes, dump
 from mido import MidiFile, tick2second
 from pynbt import TAG_Int, TAG_String, TAG_Compound, TAG_Short, NBTFile
 from serial import Serial
@@ -38,9 +37,9 @@ def asset_load():
             rmtree("Cache")
         state[2] = "加载配置文件中"
         with open("Asset/text/manifest.json", "r") as manifest:
-            asset_list["manifest"] = dumps(load(manifest))
+            asset_list["manifest"] = dumps(load_bytes(manifest.read()))
         with open("Asset/text/setting.json", "r") as settings:
-            asset_list["setting"] = load(settings)
+            asset_list["setting"] = load_bytes(settings.read())
         asset_list["fps"] = asset_list["setting"]["setting"]["fps"]
         state[3][0] = int(asset_list["setting"]["setting"]["auto_gain"])
         state[3][2] = int(asset_list["setting"]["setting"]["speed"])
@@ -134,7 +133,7 @@ def structure_load(n):
 
 def convertor(midi_path, midi_name, cvt_setting):
     message_id = task_id
-    convertor_state = False
+    convertor_state = True
     message_list.append(["[--%] " + midi_name[0:-4] + " 载入文件中", message_id])
     try:
         if cvt_setting[5] == 2:
@@ -152,13 +151,17 @@ def convertor(midi_path, midi_name, cvt_setting):
         info_list = {}
         tempo_list = []
         velocity_list = []
-        mid = MidiFile(midi_path + midi_name)
+        mid = MidiFile(midi_path + midi_name, clip=True)
         if cvt_setting[7] == 0:
-            structure = loads(asset_list["structure_file"][cvt_setting[1]][0])
+            try:
+                structure = loads(asset_list["structure_file"][cvt_setting[1]][0])
+                total = structure["size"][0].value * structure["size"][1].value * structure["size"][2].value
+                h = total - 1
+            except Exception:
+                convertor_state = "无模板或模板损坏"
+                return
             manifest = {}
             behavior = []
-            total = structure["size"][0].value * structure["size"][1].value * structure["size"][2].value
-            h = total - 1
         elif cvt_setting[7] == 1:
             structure = TAG_Compound({})
             manifest = loads(asset_list["manifest"])
@@ -576,7 +579,8 @@ def convertor(midi_path, midi_name, cvt_setting):
                                 i = 0
                                 while not device.in_waiting:
                                     if i >= 100:
-                                        exit()
+                                        convertor_state = "连接设备超时"
+                                        return
                                     i += 1
                                     sleep(0.001)
                                 device.reset_input_buffer()
@@ -584,7 +588,8 @@ def convertor(midi_path, midi_name, cvt_setting):
                                 progress_bar(message_id, midi_name[0:-4] + " 写入中", progress, total)
                             tick_time = source_time
                     else:
-                        exit()
+                        convertor_state = "连接设备失败"
+                        return
         del mid
         del info_list
         del time_list
@@ -593,14 +598,16 @@ def convertor(midi_path, midi_name, cvt_setting):
         del note_buffer
         del velocity_list
         collect()
-        convertor_state = True
+        convertor_state = False
     except Exception:
         save_log(3, "E:", format_exc())
     finally:
-        if convertor_state:
+        if convertor_state is False:
             message_list.append(("转换完成，文件已保存在程序运行目录下！", task_id))
         else:
-            message_list.append((midi_name[0:-4] + " 转换失败", task_id))
+            if convertor_state is True:
+                convertor_state = "原因未知"
+            message_list.append((midi_name[0:-4] + " 转换失败，" + convertor_state, task_id))
 
 def progress_bar(mess_id, title, pss, tal):
     try:
@@ -686,7 +693,7 @@ def download():
         if target_hash != "disable" and real_hash != target_hash:
             raise ValueError("The Expected Hash is " + str(target_hash) + ", But the Hash of Downloaded FIle is " + str(real_hash) + ".")
         message_list.append(("下载完成，即将进行更新。", -1))
-        state[7] = True
+        state[7] = 2
     except Exception:
         state[6] = [0, 0, True]
         message_list.append(("下载失败，请重试。", -1))
@@ -1034,7 +1041,7 @@ def setting_blit(setting):
             del message_list[0]
 
 log = [[False, True], ["Loading:"], ["Main:"], ["Convertor:"], ["Updater:"], ["Other:"]]
-state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0, 0, 0], False, None, [0, 0, True], False, [0, 0], -1]
+state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0, 0, 0], False, None, [0, 0, True], 0, [0, 0], -1]
 
 try:
     display.init()
@@ -1059,11 +1066,11 @@ try:
     clock = time.Clock()
 
     while True:
-        if state[7] and len(message_list) == 0:
-            exit()
+        if state[7] and (state[7] == 1 or len(message_list) == 0):
+            break
         for env in event.get():
             if env.type == QUIT:
-                exit()
+                state[7] = 1
             if env.type == MOUSEBUTTONDOWN:
                 if state[0] != 2:
                     if env.button == 1:
@@ -1260,7 +1267,7 @@ finally:
                     if m != 0:
                         text = "  " + text
                     file.write(str(text) + "\n")
-    if state[7]:
+    if state[7] == 2:
         sleep(1)
         Popen("Updater/updater.exe")
     _exit(0)
