@@ -2,7 +2,7 @@ from gc import collect
 from os import listdir, path, makedirs, _exit
 from PIL import Image, ImageFilter
 from time import sleep
-from json import loads as load_bytes, dump
+from json import loads as load_bytes, dumps as dump_bytes
 from mido import MidiFile, tick2second
 from pynbt import TAG_Int, TAG_String, TAG_Compound, TAG_Short, NBTFile
 from serial import Serial
@@ -36,10 +36,10 @@ def asset_load():
             move("Cache/Updater", "Updater")
             rmtree("Cache")
         state[2] = "加载配置文件中"
-        with open("Asset/text/manifest.json", "r") as manifest:
-            asset_list["manifest"] = dumps(load_bytes(manifest.read()))
-        with open("Asset/text/setting.json", "r") as settings:
-            asset_list["setting"] = load_bytes(settings.read())
+        with open("Asset/text/manifest.json", "r") as io:
+            asset_list["manifest"] = dumps(load_bytes(io.read()))
+        with open("Asset/text/setting.json", "r") as io:
+            asset_list["setting"] = load_bytes(io.read())
         asset_list["fps"] = asset_list["setting"]["setting"]["fps"]
         state[3][0] = int(asset_list["setting"]["setting"]["auto_gain"])
         state[3][2] = int(asset_list["setting"]["setting"]["speed"])
@@ -114,6 +114,7 @@ def asset_load():
         else:
             state[2] = "加载完成"
             state[0] = 2
+        collect()
 
 def structure_load(n):
     with open("Asset/mcstructure/" + n, "rb") as structure:
@@ -134,7 +135,7 @@ def structure_load(n):
 def convertor(midi_path, midi_name, cvt_setting):
     message_id = task_id
     convertor_state = True
-    message_list.append(["[--%] " + midi_name[0:-4] + " 载入文件中", message_id])
+    message_list.append(["[--%] 正在加载 " + midi_name[0:-4], message_id])
     try:
         if cvt_setting[5] == 2:
             asset_list["setting"]["setting"]["id"] += 1
@@ -158,7 +159,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                 total = structure["size"][0].value * structure["size"][1].value * structure["size"][2].value
                 h = total - 1
             except Exception:
-                convertor_state = "无模板或模板损坏"
+                convertor_state = "无可用模板"
                 return
             manifest = {}
             behavior = []
@@ -192,64 +193,72 @@ def convertor(midi_path, midi_name, cvt_setting):
         else:
             total = num * 3
         if len(message_list) == 0:
-            message_list.append(["[0%] " + midi_name[0:-4] + " 转换正在进行", message_id])
+            message_list.append(["[0%] 正在转换 " + midi_name[0:-4], message_id])
         progress_bar(message_id, midi_name[0:-4], 0, 1)
         progress = 0
         offset_time = -1
-        for n, track in enumerate(mid.tracks):
+        for track in mid.tracks:
             source_time = 0
             for msg in track:
-                tempo = 500000
-                for tmp in tempo_list:
-                    if tmp[0] > source_time:
-                        break
-                    else:
-                        tempo = tmp[1]
-                source_time += tick2second(msg.time, mid.ticks_per_beat, tempo) * 2000 / cvt_setting[2]
+                source_time += msg.time
                 if msg.type == "set_tempo":
-                    value = msg.tempo
-                    tempo_list.append((source_time, value))
+                    tempo_list.append((source_time, msg.tempo))
                 if msg.type == "control_change":
                     channel = msg.channel
                     if channel not in info_list:
-                        info_list[channel] = {"program": [], "volume": [], "balance": []}
+                        info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
                     if msg.control == 7:
                         value = int(msg.value / 1.27) / 100
-                        info_list[channel]["volume"].append([source_time, value])
+                        for n, vol in enumerate(info_list[channel]["volume"]):
+                            if vol[0] >= source_time:
+                                info_list[channel]["volume"].insert(n, (source_time, value))
+                                break
                     elif msg.control == 8 or msg.control == 10:
                         value = msg.value - 64
                         if value > 0:
                             value = value / -63
                         elif value < 0:
                             value = value / -64
-                        info_list[channel]["balance"].append([source_time, value])
+                        for n, bal in enumerate(info_list[channel]["balance"]):
+                            if bal[0] >= source_time:
+                                info_list[channel]["balance"].insert(n, (source_time, value))
+                                break
                     elif msg.control == 121:
-                        info_list[channel]["balance"].append([source_time, 0])
-                        info_list[channel]["volume"].append([source_time, 1])
+                        for n, bal in enumerate(info_list[channel]["balance"]):
+                            if bal[0] >= source_time:
+                                info_list[channel]["balance"].insert(n, (source_time, 0))
+                                break
+                        for n, vol in enumerate(info_list[channel]["volume"]):
+                            if vol[0] >= source_time:
+                                info_list[channel]["volume"].insert(n, (source_time, 1))
+                                break
                 if msg.type == "program_change":
                     program = str(msg.program)
                     channel = msg.channel
                     if channel not in info_list:
-                        info_list[channel] = {"program": [], "volume": [], "balance": []}
+                        info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
                     if channel != 9:
                         if cvt_setting[7] == 2:
                             if program in asset_list["setting"]["asset"]["java"]["sound_list"]:
-                                info_list[channel]["program"].append([source_time, asset_list["setting"]["asset"]["java"]["sound_list"][program]])
+                                value = asset_list["setting"]["asset"]["java"]["sound_list"][program]
                             else:
-                                info_list[channel]["program"].append([source_time, asset_list["setting"]["asset"]["java"]["sound_list"]["undefined"]])
+                                value = asset_list["setting"]["asset"]["java"]["sound_list"]["undefined"]
                         else:
                             if program in asset_list["setting"]["asset"]["bedrock"]["sound_list"]:
-                                info_list[channel]["program"].append([source_time, asset_list["setting"]["asset"]["bedrock"]["sound_list"][program]])
+                                value = asset_list["setting"]["asset"]["bedrock"]["sound_list"][program]
                             else:
-                                info_list[channel]["program"].append([source_time, asset_list["setting"]["asset"]["bedrock"]["sound_list"]["undefined"]])
-                        info_list[channel]["volume"].append([source_time, 1])
+                                value = asset_list["setting"]["asset"]["bedrock"]["sound_list"]["undefined"]
+                        for n, typ in enumerate(info_list[channel]["program"]):
+                            if typ[0] >= source_time:
+                                info_list[channel]["program"].insert(n, (source_time, value))
+                                break
                 if msg.type == "note_on":
                     note = msg.note - 21
                     channel = msg.channel
                     velocity = msg.velocity / 127
                     if velocity != 0:
                         if channel not in info_list:
-                            info_list[channel] = {"program": [], "volume": [], "balance": []}
+                            info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
                         if cvt_setting[9] != 0 and channel != 9:
                             volume = 1
                             for vol in info_list[channel]["volume"]:
@@ -278,13 +287,30 @@ def convertor(midi_path, midi_name, cvt_setting):
                         if cvt_setting[0] != 0:
                             velocity_list.append((source_time, velocity, channel))
                         if cvt_setting[3]:
-                            tick_time = int(round(source_time))
-                            if (cvt_setting[4] or channel != 9) and (offset_time == -1 or tick_time < offset_time):
-                                offset_time = tick_time
+                            if (cvt_setting[4] or channel != 9) and (offset_time == -1 or source_time < offset_time):
+                                offset_time = source_time
                         else:
                             offset_time = 0
                         progress += 1
-                        progress_bar(message_id, midi_name[0:-4] + " 转换正在进行", progress, total)
+                        progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
+        tempo_num = len(tempo_list)
+        if tempo_num:
+            for n in range(tempo_num):
+                for i in range(tempo_num - n - 1):
+                    if tempo_list[i][0] > tempo_list[i + 1][0]:
+                        tempo_list[i], tempo_list[i + 1] = tempo_list[i + 1], tempo_list[i]
+        else:
+            tempo_list = [(0, 500000)]
+        tempo_list.append((float("INF"), tempo_list[-1][1]))
+        if offset_time:
+            tick_time = 0
+            for n in range(1, len(tempo_list)):
+                if tempo_list[n][0] <= offset_time:
+                    tick_time += tick2second(tempo_list[n][0] - tempo_list[n - 1][0], mid.ticks_per_beat, tempo_list[n - 1][1]) * 2000 / cvt_setting[2]
+                else:
+                    tick_time += tick2second(offset_time - tempo_list[n - 1][0], mid.ticks_per_beat, tempo_list[n - 1][1]) * 2000 / cvt_setting[2]
+                    break
+            offset_time = tick_time
         if cvt_setting[9] == 2:
             pitch_offset = [0, 0]
             for n, i in enumerate(pitch_list):
@@ -313,16 +339,10 @@ def convertor(midi_path, midi_name, cvt_setting):
         note_len = len(asset_list["setting"]["asset"]["note_list"])
         time_list = []
         note_buffer = {}
-        for n, track in enumerate(mid.tracks):
+        for track in mid.tracks:
             source_time = 0
             for msg in track:
-                tempo = 500000
-                for tmp in tempo_list:
-                    if tmp[0] > source_time:
-                        break
-                    else:
-                        tempo = tmp[1]
-                source_time += tick2second(msg.time, mid.ticks_per_beat, tempo) * 2000 / cvt_setting[2]
+                source_time += msg.time
                 if msg.type == "note_on":
                     note = msg.note - 21
                     channel = msg.channel
@@ -364,48 +384,55 @@ def convertor(midi_path, midi_name, cvt_setting):
                         velocity = int((velocity / 1.27) * volume * total_vol) / 100
                         if velocity >= 1:
                             velocity = 1
-                        tick_time = int(round(source_time)) - offset_time
+                        tick_time = 0
+                        for n in range(1, len(tempo_list)):
+                            if tempo_list[n][0] <= source_time:
+                                tick_time += tick2second(tempo_list[n][0] - tempo_list[n - 1][0], mid.ticks_per_beat, tempo_list[n - 1][1]) * 2000 / cvt_setting[2]
+                            else:
+                                tick_time += tick2second(source_time - tempo_list[n - 1][0], mid.ticks_per_beat, tempo_list[n - 1][1]) * 2000 / cvt_setting[2]
+                                break
+                        tick_time = int(round(tick_time - offset_time))
                         if cvt_setting[5] == 1:
                             append_num = 2
                         elif cvt_setting[5] == 2:
                             append_num = 2
                         else:
                             append_num = 0
-                        if (cvt_setting[4] or channel != 9) and ((cvt_setting[5] == 0 or num <= h - append_num) and ((0 <= note < note_len) and (cvt_setting[9] == 0 or (channel == 9 or 0.5 <= asset_list["setting"]["asset"]["note_list"][note + pitch_offset] <= 2)))):
-                                if state[3][7] == 3:
-                                    raw_text = "WD " + to_text(note, 2)
+                        if (cvt_setting[4] or channel != 9) and ((cvt_setting[5] == 0 or num <= h - append_num) and (channel == 9 or ((0 <= note < note_len) and (cvt_setting[9] == 0 or 0.5 <= asset_list["setting"]["asset"]["note_list"][note + pitch_offset] <= 2)))):
+                            if state[3][7] == 3:
+                                raw_text = "WD " + to_text(note, 2)
+                            else:
+                                if cvt_setting[7] == 2:
+                                    if cvt_setting[5] == 0:
+                                        raw_text = asset_list["setting"]["asset"]["java"]["command_delay"]
+                                    elif cvt_setting[5] == 1:
+                                        raw_text = asset_list["setting"]["asset"]["java"]["command_clock"]
+                                    elif cvt_setting[5] == 2:
+                                        raw_text = asset_list["setting"]["asset"]["java"]["command_address"]
+                                    else:
+                                        raw_text = ""
                                 else:
-                                    if cvt_setting[7] == 2:
-                                        if cvt_setting[5] == 0:
-                                            raw_text = asset_list["setting"]["asset"]["java"]["command_delay"]
-                                        elif cvt_setting[5] == 1:
-                                            raw_text = asset_list["setting"]["asset"]["java"]["command_clock"]
-                                        elif cvt_setting[5] == 2:
-                                            raw_text = asset_list["setting"]["asset"]["java"]["command_address"]
-                                        else:
-                                            raw_text = ""
+                                    if cvt_setting[5] == 0:
+                                        raw_text = asset_list["setting"]["asset"]["bedrock"]["command_delay"]
+                                    elif cvt_setting[5] == 1:
+                                        raw_text = asset_list["setting"]["asset"]["bedrock"]["command_clock"]
+                                    elif cvt_setting[5] == 2:
+                                        raw_text = asset_list["setting"]["asset"]["bedrock"]["command_address"]
                                     else:
-                                        if cvt_setting[5] == 0:
-                                            raw_text = asset_list["setting"]["asset"]["bedrock"]["command_delay"]
-                                        elif cvt_setting[5] == 1:
-                                            raw_text = asset_list["setting"]["asset"]["bedrock"]["command_clock"]
-                                        elif cvt_setting[5] == 2:
-                                            raw_text = asset_list["setting"]["asset"]["bedrock"]["command_address"]
-                                        else:
-                                            raw_text = ""
-                                    if channel == 9:
-                                        pitch = 1
-                                    else:
-                                        pitch = asset_list["setting"]["asset"]["note_list"][note + pitch_offset]
-                                    raw_text = raw_text.replace("{SOUND}", str(program)).replace("{BALANCE}", str(balance)).replace("{VOLUME}", str(velocity)).replace("{PITCH}", str(pitch)).replace("{TIME}", str(tick_time)).replace("{ADDRESS}", str(play_id))
-                                if tick_time not in note_buffer:
-                                    note_buffer[tick_time] = []
-                                if tick_time not in time_list:
-                                    time_list.append(tick_time)
-                                note_buffer[tick_time].append(raw_text)
-                                num += 1
+                                        raw_text = ""
+                                if channel == 9:
+                                    pitch = 1
+                                else:
+                                    pitch = asset_list["setting"]["asset"]["note_list"][note + pitch_offset]
+                                raw_text = raw_text.replace("{SOUND}", str(program)).replace("{BALANCE}", str(balance)).replace("{VOLUME}", str(velocity)).replace("{PITCH}", str(pitch)).replace("{TIME}", str(tick_time)).replace("{ADDRESS}", str(play_id))
+                            if tick_time not in note_buffer:
+                                note_buffer[tick_time] = []
+                            if tick_time not in time_list:
+                                time_list.append(tick_time)
+                            note_buffer[tick_time].append(raw_text)
+                            num += 1
                         progress += 1
-                        progress_bar(message_id, midi_name[0:-4] + " 转换正在进行", progress, total)
+                        progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
         time_list.sort()
         if cvt_setting[7] == 2:
             if cvt_setting[5] == 1:
@@ -466,7 +493,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                         i["z"].value - structure["structure_world_origin"][2].value
                     )))
                     progress += 1
-                    progress_bar(message_id, midi_name[0:-4] + " 转换正在进行", progress, total)
+                    progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
                 i["CustomName"] = TAG_String("")
             n = 0
             air_palette = -1
@@ -515,7 +542,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                             p[0] += 1
                         i += 1
                         progress += 1
-                        progress_bar(message_id, midi_name[0:-4] + " 转换正在进行", progress, total)
+                        progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
                     else:
                         break
                 tick_time = source_time
@@ -526,7 +553,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                     structure["structure"]["block_indices"][0][n] = TAG_Int(air_palette)
                     structure["structure"]["block_indices"][1][n] = TAG_Int(-1)
                     progress += 1
-                    progress_bar(message_id, midi_name[0:-4] + " 转换正在进行", progress, total)
+                    progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
             with open(output_name + ".mcstructure", "wb") as io:
                 structure.save(io, little_endian=True)
         elif cvt_setting[7] == 1:
@@ -539,11 +566,11 @@ def convertor(midi_path, midi_name, cvt_setting):
                     for cmd in note_buffer[source_time]:
                         io.write(cmd[1:] + "\n")
                         progress += 1
-                        progress_bar(message_id, midi_name[0:-4] + " 转换正在进行", progress, total)
+                        progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
             with open(output_name + "/world_behavior_packs.json", "w") as io:
-                dump(behavior, io)
+                io.write(dump_bytes(behavior))
             with open(output_name + "/manifest.json", "w") as io:
-                dump(manifest, io)
+                io.write(dump_bytes(manifest))
         elif cvt_setting[7] == 2:
             if path.exists(output_name):
                 rmtree(output_name)
@@ -556,17 +583,17 @@ def convertor(midi_path, midi_name, cvt_setting):
                     for cmd in note_buffer[source_time]:
                         io.write(cmd[1:] + "\n")
                         progress += 1
-                        progress_bar(message_id, midi_name[0:-4] + " 转换正在进行", progress, total)
+                        progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
             with open(output_name + "/pack.mcmeta", "w") as io:
-                dump(behavior, io)
+                io.write(dump_bytes(behavior))
         elif state[3][7] == 3:
-            progress_bar(message_id, asset_list["serial_list"][state[3][8]][1] + " 连接中", progress, total)
+            progress_bar(message_id, "正在连接 " + asset_list["serial_list"][state[3][8]][1], progress, total)
             with Serial(asset_list["serial_list"][state[3][8]][0], baudrate=9600, parity=PARITY_EVEN) as device:
                 if device.is_open:
                     device.write(b"CR")
                     sleep(0.1)
                     if device.read_all().decode() == "IC":
-                        progress_bar(message_id, device.name + " 已连接", progress, total)
+                        progress_bar(message_id, "已连接 " + device.name, progress, total)
                         tick_time = 0
                         for source_time in time_list:
                             for n, cmd in enumerate(note_buffer[source_time]):
@@ -585,7 +612,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                                     sleep(0.001)
                                 device.reset_input_buffer()
                                 progress += 1
-                                progress_bar(message_id, midi_name[0:-4] + " 写入中", progress, total)
+                                progress_bar(message_id, "写入中 " + midi_name[0:-4], progress, total)
                             tick_time = source_time
                     else:
                         convertor_state = "连接设备失败"
@@ -606,8 +633,8 @@ def convertor(midi_path, midi_name, cvt_setting):
             message_list.append(("转换完成，文件已保存在程序运行目录下！", task_id))
         else:
             if convertor_state is True:
-                convertor_state = "原因未知"
-            message_list.append((midi_name[0:-4] + " 转换失败，" + convertor_state, task_id))
+                convertor_state = "未知错误"
+            message_list.append(("因" + convertor_state + "无法转换 " + midi_name[0:-4], task_id))
 
 def progress_bar(mess_id, title, pss, tal):
     try:
@@ -643,8 +670,8 @@ def save_json():
         asset_list["setting"]["setting"]["append_number"] = int(state[3][6])
         asset_list["setting"]["setting"]["file_type"] = state[3][7]
         asset_list["setting"]["setting"]["range_limit"] = state[3][9]
-        with open("Asset/text/setting.json", "w") as settings:
-            dump(asset_list["setting"], settings, indent=2)
+        with open("Asset/text/setting.json", "w") as io:
+            io.write(dump_bytes(asset_list["setting"], indent=2))
     except Exception:
         save_log(5, "E:", format_exc())
 
