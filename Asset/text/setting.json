@@ -1,18 +1,19 @@
 {
   "setting": {
     "fps": 120,
-    "version": "22250505",
-    "edition": "FinalEdition-P3",
+    "version": "22250525",
+    "edition": "FinalEdition-P4",
     "auto_gain": 30,
     "speed": 100,
     "skip": 1,
     "enable_percussion": 1,
     "mode": 0,
     "append_number": 0,
-    "id": -1,
+    "id": 2,
     "file_type": 0,
     "log_level": 1,
     "range_limit": 0,
+    "adjust_instrument": 1,
     "color": [
       [
         255,
@@ -79,7 +80,7 @@
       0.84,
       0.9,
       0.94,
-      1,
+      1.0,
       1.05,
       1.12,
       1.2,
@@ -91,31 +92,31 @@
       1.7,
       1.8,
       1.9,
-      2,
+      2.0,
       2.1,
       2.24,
       2.4,
       2.5,
       2.67,
       2.83,
-      3,
+      3.0,
       3.17,
       3.36,
       3.56,
       3.78,
-      4,
+      4.0,
       4.24,
       4.5,
       4.76,
       5.04,
       5.34,
       5.66,
-      6,
+      6.0,
       6.35,
       6.73,
       7.13,
       7.55,
-      8,
+      8.0,
       8.47,
       8.98,
       9.51,
@@ -128,78 +129,362 @@
       "command_clock": "/execute as @a[scores={MMS_Service={TIME}}] at @s run playsound {SOUND} @s ^{BALANCE}^^ {VOLUME} {PITCH} {VOLUME}",
       "command_address": "/execute as @a[scores={MMS_Service={TIME},MMS_Address={ADDRESS}}] at @s run playsound {SOUND} @s ^{BALANCE}^^ {VOLUME} {PITCH} {VOLUME}",
       "sound_list": {
-        "undefined": "note.harp",
-        "default": "note.harp",
-        "0": "note.harp",
-        "46": "note.harp",
-        "1": "note.pling",
-        "2": "note.pling",
-        "9": "note.bell",
-        "10": "note.bell",
-        "112": "note.cow_bell",
-        "11": "note.iron_xylophone",
-        "13": "note.xylophone",
-        "115": "note.xylophone",
-        "14": "note.chime",
-        "24": "note.guitar",
-        "25": "note.guitar",
-        "26": "note.guitar",
-        "27": "note.guitar",
-        "28": "note.guitar",
-        "29": "note.guitar",
-        "30": "note.guitar",
-        "31": "note.guitar",
-        "32": "note.bass",
-        "33": "note.bass",
-        "34": "note.bass",
-        "35": "note.bass",
-        "36": "note.bass",
-        "37": "note.bass",
-        "38": "note.bass",
-        "39": "note.bass",
-        "72": "note.flute",
-        "73": "note.flute",
-        "74": "note.flute",
-        "75": "note.flute",
-        "76": "note.flute",
-        "77": "note.flute",
-        "78": "note.flute",
-        "79": "note.flute",
-        "80": "note.bit",
-        "81": "note.bit",
-        "82": "note.bit",
-        "83": "note.bit",
-        "84": "note.bit",
-        "105": "note.banjo",
-        "116": "note.snare",
-        "117": "note.snare",
-        "118": "note.snare",
-        "114": "note.hat",
-        "126": "note.hat",
-        "119": "dig.sand",
+        "undefined": [
+          "note.harp",
+          0.53,
+          1.0
+        ],
+        "default": [
+          "note.harp",
+          0.53,
+          1.0
+        ],
+        "0": [
+          "note.harp",
+          0.53,
+          1.0
+        ],
+        "46": [
+          "note.harp",
+          0.53,
+          1.0
+        ],
+        "1": [
+          "note.pling",
+          0.4,
+          1.0
+        ],
+        "2": [
+          "note.pling",
+          0.4,
+          1.0
+        ],
+        "9": [
+          "note.bell",
+          0.86,
+          1.0
+        ],
+        "10": [
+          "note.bell",
+          0.86,
+          1.0
+        ],
+        "112": [
+          "note.cow_bell",
+          0.68,
+          1.0
+        ],
+        "11": [
+          "note.iron_xylophone",
+          0.86,
+          1.0
+        ],
+        "13": [
+          "note.xylophone",
+          0.9,
+          1.0
+        ],
+        "115": [
+          "note.xylophone",
+          0.9,
+          1.0
+        ],
+        "14": [
+          "note.chime",
+          1.0,
+          1.0
+        ],
+        "24": [
+          "note.guitar",
+          0.81,
+          1.0
+        ],
+        "25": [
+          "note.guitar",
+          0.81,
+          1.0
+        ],
+        "26": [
+          "note.guitar",
+          0.81,
+          1.0
+        ],
+        "27": [
+          "note.guitar",
+          0.81,
+          1.0
+        ],
+        "28": [
+          "note.guitar",
+          0.81,
+          1.0
+        ],
+        "29": [
+          "note.guitar",
+          0.81,
+          1.0
+        ],
+        "30": [
+          "note.guitar",
+          0.81,
+          1.0
+        ],
+        "31": [
+          "note.guitar",
+          0.81,
+          1.0
+        ],
+        "32": [
+          "note.bass",
+          0.9,
+          1.0
+        ],
+        "33": [
+          "note.bass",
+          0.9,
+          1.0
+        ],
+        "34": [
+          "note.bass",
+          0.9,
+          1.0
+        ],
+        "35": [
+          "note.bass",
+          0.9,
+          1.0
+        ],
+        "36": [
+          "note.bass",
+          0.9,
+          1.0
+        ],
+        "37": [
+          "note.bass",
+          0.9,
+          1.0
+        ],
+        "38": [
+          "note.bass",
+          0.9,
+          1.0
+        ],
+        "39": [
+          "note.bass",
+          0.9,
+          1.0
+        ],
+        "72": [
+          "note.flute",
+          0.9,
+          1.0
+        ],
+        "73": [
+          "note.flute",
+          0.9,
+          1.0
+        ],
+        "74": [
+          "note.flute",
+          0.9,
+          1.0
+        ],
+        "75": [
+          "note.flute",
+          0.9,
+          1.0
+        ],
+        "76": [
+          "note.flute",
+          0.9,
+          1.0
+        ],
+        "77": [
+          "note.flute",
+          0.9,
+          1.0
+        ],
+        "78": [
+          "note.flute",
+          0.9,
+          1.0
+        ],
+        "79": [
+          "note.flute",
+          0.9,
+          1.0
+        ],
+        "80": [
+          "note.bit",
+          1.0,
+          1.0
+        ],
+        "81": [
+          "note.bit",
+          1.0,
+          1.0
+        ],
+        "82": [
+          "note.bit",
+          1.0,
+          1.0
+        ],
+        "83": [
+          "note.bit",
+          1.0,
+          1.0
+        ],
+        "84": [
+          "note.bit",
+          1.0,
+          1.0
+        ],
+        "105": [
+          "note.banjo",
+          0.8,
+          1
+        ],
+        "116": [
+          "dig.stone",
+          2.0,
+          0.5
+        ],
+        "117": [
+          "note.snare",
+          1.0,
+          1.0
+        ],
+        "118": [
+          "note.snare",
+          1.0,
+          1.0
+        ],
+        "114": [
+          "note.hat",
+          1.0,
+          1.0
+        ],
+        "126": [
+          "note.hat",
+          1.0,
+          1.0
+        ],
+        "119": [
+          "dig.sand",
+          3.0,
+          1.0
+        ],
         "percussion": {
-          "undefined": "dig.sand",
-          "31": "note.hat",
-          "33": "note.snare",
-          "34": "note.hat",
-          "35": "note.snare",
-          "36": "note.snare",
-          "37": "note.hat",
-          "38": "note.hat",
-          "39": "note.hat",
-          "40": "note.hat",
-          "41": "note.snare",
-          "43": "note.hat",
-          "45": "note.snare",
-          "46": "dig.sand",
-          "47": "note.snare",
-          "48": "note.hat",
-          "49": "dig.sand",
-          "50": "note.hat",
-          "56": "note.cow_bell",
-          "69": "dig.sand",
-          "83": "note.bell",
-          "84": "note.bell"
+          "undefined": [
+            "dig.sand",
+            3.0,
+            1.0
+          ],
+          "31": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "33": [
+            "note.snare",
+            1.0,
+            1.0
+          ],
+          "34": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "35": [
+            "dig.stone",
+            2.0,
+            0.5
+          ],
+          "36": [
+            "note.snare",
+            1.0,
+            1.0
+          ],
+          "37": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "38": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "39": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "40": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "41": [
+            "dig.stone",
+            2.0,
+            0.5
+          ],
+          "43": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "45": [
+            "dig.stone",
+            2.0,
+            0.5
+          ],
+          "46": [
+            "dig.sand",
+            3.0,
+            1.0
+          ],
+          "47": [
+            "note.snare",
+            1.0,
+            1.0
+          ],
+          "48": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "49": [
+            "dig.sand",
+            3.0,
+            1.0
+          ],
+          "50": [
+            "note.hat",
+            1.0,
+            1.0
+          ],
+          "56": [
+            "note.cow_bell",
+            1.0,
+            1.0
+          ],
+          "69": [
+            "dig.sand",
+            3.0,
+            1.0
+          ],
+          "83": [
+            "note.bell",
+            1.0,
+            1.0
+          ],
+          "84": [
+            "note.bell",
+            1.0,
+            1.0
+          ]
         }
       }
     },
@@ -208,78 +493,362 @@
       "command_clock": "/execute as @a[scores={MMS_Service={TIME}}] at @s run playsound minecraft:{SOUND} record @s ^{BALANCE} ^ ^ {VOLUME} {PITCH} {VOLUME}",
       "command_address": "/execute as @a[scores={MMS_Service={TIME},MMS_Address={ADDRESS}}] at @s run playsound minecraft:{SOUND} record @s ^{BALANCE} ^ ^ {VOLUME} {PITCH} {VOLUME}",
       "sound_list": {
-        "undefined": "block.note_block.harp",
-        "default": "block.note_block.harp",
-        "0": "block.note_block.harp",
-        "46": "block.note_block.harp",
-        "1": "block.note_block.pling",
-        "2": "block.note_block.pling",
-        "9": "block.note_block.bell",
-        "10": "block.note_block.bell",
-        "112": "block.note_block.cow_bell",
-        "11": "block.note_block.iron_xylophone",
-        "13": "block.note_block.xylophone",
-        "115": "block.note_block.xylophone",
-        "14": "block.note_block.chime",
-        "24": "block.note_block.guitar",
-        "25": "block.note_block.guitar",
-        "26": "block.note_block.guitar",
-        "27": "block.note_block.guitar",
-        "28": "block.note_block.guitar",
-        "29": "block.note_block.guitar",
-        "30": "block.note_block.guitar",
-        "31": "block.note_block.guitar",
-        "32": "block.note_block.bass",
-        "33": "block.note_block.bass",
-        "34": "block.note_block.bass",
-        "35": "block.note_block.bass",
-        "36": "block.note_block.bass",
-        "37": "block.note_block.bass",
-        "38": "block.note_block.bass",
-        "39": "block.note_block.bass",
-        "71": "block.note_block.flute",
-        "72": "block.note_block.flute",
-        "73": "block.note_block.flute",
-        "74": "block.note_block.flute",
-        "76": "block.note_block.flute",
-        "77": "block.note_block.flute",
-        "78": "block.note_block.flute",
-        "79": "block.note_block.flute",
-        "80": "block.note_block.bit",
-        "81": "block.note_block.bit",
-        "82": "block.note_block.bit",
-        "83": "block.note_block.bit",
-        "84": "block.note_block.bit",
-        "105": "block.note_block.banjo",
-        "116": "block.note_block.basedrum",
-        "117": "block.note_block.snare",
-        "118": "block.note_block.snare",
-        "114": "block.note_block.hat",
-        "126": "block.note_block.hat",
-        "119": "block.sand.break",
+        "undefined": [
+          "block.note_block.harp",
+          0.53,
+          1.0
+        ],
+        "default": [
+          "block.note_block.harp",
+          0.53,
+          1.0
+        ],
+        "0": [
+          "block.note_block.harp",
+          0.53,
+          1.0
+        ],
+        "46": [
+          "block.note_block.harp",
+          0.53,
+          1.0
+        ],
+        "1": [
+          "block.note_block.pling",
+          0.4,
+          1.0
+        ],
+        "2": [
+          "block.note_block.pling",
+          0.4,
+          1.0
+        ],
+        "9": [
+          "block.note_block.bell",
+          0.86,
+          1.0
+        ],
+        "10": [
+          "block.note_block.bell",
+          0.86,
+          1.0
+        ],
+        "112": [
+          "block.note_block.cow_bell",
+          0.68,
+          1.0
+        ],
+        "11": [
+          "block.note_block.iron_xylophone",
+          0.86,
+          1.0
+        ],
+        "13": [
+          "block.note_block.xylophone",
+          0.9,
+          1.0
+        ],
+        "115": [
+          "block.note_block.xylophone",
+          0.9,
+          1.0
+        ],
+        "14": [
+          "block.note_block.chime",
+          1.0,
+          1.0
+        ],
+        "24": [
+          "block.note_block.guitar",
+          0.81,
+          1.0
+        ],
+        "25": [
+          "block.note_block.guitar",
+          0.81,
+          1.0
+        ],
+        "26": [
+          "block.note_block.guitar",
+          0.81,
+          1.0
+        ],
+        "27": [
+          "block.note_block.guitar",
+          0.81,
+          1.0
+        ],
+        "28": [
+          "block.note_block.guitar",
+          0.81,
+          1.0
+        ],
+        "29": [
+          "block.note_block.guitar",
+          0.81,
+          1.0
+        ],
+        "30": [
+          "block.note_block.guitar",
+          0.81,
+          1.0
+        ],
+        "31": [
+          "block.note_block.guitar",
+          0.81,
+          1.0
+        ],
+        "32": [
+          "block.note_block.bass",
+          0.9,
+          1.0
+        ],
+        "33": [
+          "block.note_block.bass",
+          0.9,
+          1.0
+        ],
+        "34": [
+          "block.note_block.bass",
+          0.9,
+          1.0
+        ],
+        "35": [
+          "block.note_block.bass",
+          0.9,
+          1.0
+        ],
+        "36": [
+          "block.note_block.bass",
+          0.9,
+          1.0
+        ],
+        "37": [
+          "block.note_block.bass",
+          0.9,
+          1.0
+        ],
+        "38": [
+          "block.note_block.bass",
+          0.9,
+          1.0
+        ],
+        "39": [
+          "block.note_block.bass",
+          0.9,
+          1.0
+        ],
+        "71": [
+          "block.note_block.flute",
+          0.9,
+          1.0
+        ],
+        "72": [
+          "block.note_block.flute",
+          0.9,
+          1.0
+        ],
+        "73": [
+          "block.note_block.flute",
+          0.9,
+          1.0
+        ],
+        "74": [
+          "block.note_block.flute",
+          0.9,
+          1.0
+        ],
+        "76": [
+          "block.note_block.flute",
+          0.9,
+          1.0
+        ],
+        "77": [
+          "block.note_block.flute",
+          0.9,
+          1.0
+        ],
+        "78": [
+          "block.note_block.flute",
+          0.9,
+          1.0
+        ],
+        "79": [
+          "block.note_block.flute",
+          0.9,
+          1.0
+        ],
+        "80": [
+          "block.note_block.bit",
+          1,
+          1.0
+        ],
+        "81": [
+          "block.note_block.bit",
+          1,
+          1.0
+        ],
+        "82": [
+          "block.note_block.bit",
+          1,
+          1.0
+        ],
+        "83": [
+          "block.note_block.bit",
+          1,
+          1.0
+        ],
+        "84": [
+          "block.note_block.bit",
+          1,
+          1.0
+        ],
+        "105": [
+          "block.note_block.banjo",
+          0.8,
+          1.0
+        ],
+        "116": [
+          "block.note_block.basedrum",
+          1.0,
+          1.0
+        ],
+        "117": [
+          "block.note_block.snare",
+          1.0,
+          1.0
+        ],
+        "118": [
+          "block.note_block.snare",
+          1.0,
+          1.0
+        ],
+        "114": [
+          "block.note_block.hat",
+          1.0,
+          1.0
+        ],
+        "126": [
+          "block.note_block.hat",
+          1.0,
+          1.0
+        ],
+        "119": [
+          "block.sand.break",
+          3.0,
+          1.0
+        ],
         "percussion": {
-          "undefined": "block.sand.break",
-          "31": "block.note_block.hat",
-          "33": "block.note_block.snare",
-          "34": "block.note_block.hat",
-          "35": "block.note_block.basedrum",
-          "36": "block.note_block.snare",
-          "37": "block.note_block.hat",
-          "38": "block.note_block.hat",
-          "39": "block.note_block.hat",
-          "40": "block.note_block.hat",
-          "41": "block.note_block.basedrum",
-          "43": "block.note_block.hat",
-          "45": "block.note_block.basedrum",
-          "46": "block.sand.break",
-          "47": "block.note_block.snare",
-          "48": "block.note_block.hat",
-          "49": "block.sand.break",
-          "50": "block.note_block.hat",
-          "56": "block.note_block.cow_bell",
-          "69": "block.sand.break",
-          "83": "block.note_block.bell",
-          "84": "block.note_block.bell"
+          "undefined": [
+            "block.sand.break",
+            3.0,
+            1.0
+          ],
+          "31": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "33": [
+            "block.note_block.snare",
+            1.0,
+            1.0
+          ],
+          "34": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "35": [
+            "block.note_block.basedrum",
+            1.0,
+            1.0
+          ],
+          "36": [
+            "block.note_block.snare",
+            1.0,
+            1.0
+          ],
+          "37": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "38": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "39": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "40": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "41": [
+            "block.note_block.basedrum",
+            1.0,
+            1.0
+          ],
+          "43": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "45": [
+            "block.note_block.basedrum",
+            1.0,
+            1.0
+          ],
+          "46": [
+            "block.sand.break",
+            3.0,
+            1.0
+          ],
+          "47": [
+            "block.note_block.snare",
+            1.0,
+            1.0
+          ],
+          "48": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "49": [
+            "block.sand.break",
+            3.0,
+            1.0
+          ],
+          "50": [
+            "block.note_block.hat",
+            1.0,
+            1.0
+          ],
+          "56": [
+            "block.note_block.cow_bell",
+            0.68,
+            1.0
+          ],
+          "69": [
+            "block.sand.break",
+            3.0,
+            1.0
+          ],
+          "83": [
+            "block.note_block.bell",
+            1.0,
+            1.0
+          ],
+          "84": [
+            "block.note_block.bell",
+            1.0,
+            1.0
+          ]
         }
       }
     }
