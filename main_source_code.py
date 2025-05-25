@@ -49,6 +49,7 @@ def asset_load():
         state[3][6] = bool(asset_list["setting"]["setting"]["append_number"])
         state[3][7] = int(asset_list["setting"]["setting"]["file_type"])
         state[3][9] = int(asset_list["setting"]["setting"]["range_limit"])
+        state[3][10] = bool(asset_list["setting"]["setting"]["adjust_instrument"])
         log[0][1] = bool(asset_list["setting"]["setting"]["log_level"])
         if bool(asset_list["setting"]["setting"]["check_update"]):
             Thread(target=get_update_log).start()
@@ -147,11 +148,6 @@ def convertor(midi_path, midi_name, cvt_setting):
         else:
             output_name = "BE"
         output_name += uuid(8).upper()
-        num = 0
-        pitch_list = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-        info_list = {}
-        tempo_list = []
-        velocity_list = []
         mid = MidiFile(midi_path + midi_name, clip=True)
         if cvt_setting[7] == 0:
             try:
@@ -184,6 +180,7 @@ def convertor(midi_path, midi_name, cvt_setting):
             behavior = []
             total = 0
             h = float("INF")
+        num = 0
         for track in mid.tracks:
             for msg in track:
                 if msg.type == "note_on" and msg.velocity != 0:
@@ -197,60 +194,33 @@ def convertor(midi_path, midi_name, cvt_setting):
         progress_bar(message_id, midi_name[0:-4], 0, 1)
         progress = 0
         offset_time = -1
+        info_list = {}
+        velocity_list = []
+        pitch_list = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+        tempo_list = [(0, 500000), (float("INF"), 0)]
         for track in mid.tracks:
             source_time = 0
             for msg in track:
                 source_time += msg.time
                 if msg.type == "set_tempo":
-                    tempo_list.append((source_time, msg.tempo))
+                    for n, tmp in enumerate(tempo_list):
+                        if tmp[0] > source_time:
+                            tempo_list.insert(n, (source_time, msg.tempo))
+                            break
                 if msg.type == "control_change":
                     channel = msg.channel
                     if channel not in info_list:
-                        info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
+                        info_list[channel] = {"volume": [(float("INF"), 1)]}
                     if msg.control == 7:
                         value = int(msg.value / 1.27) / 100
                         for n, vol in enumerate(info_list[channel]["volume"]):
                             if vol[0] >= source_time:
                                 info_list[channel]["volume"].insert(n, (source_time, value))
                                 break
-                    elif msg.control == 8 or msg.control == 10:
-                        value = msg.value - 64
-                        if value > 0:
-                            value = value / -63
-                        elif value < 0:
-                            value = value / -64
-                        for n, bal in enumerate(info_list[channel]["balance"]):
-                            if bal[0] >= source_time:
-                                info_list[channel]["balance"].insert(n, (source_time, value))
-                                break
                     elif msg.control == 121:
-                        for n, bal in enumerate(info_list[channel]["balance"]):
-                            if bal[0] >= source_time:
-                                info_list[channel]["balance"].insert(n, (source_time, 0))
-                                break
                         for n, vol in enumerate(info_list[channel]["volume"]):
                             if vol[0] >= source_time:
                                 info_list[channel]["volume"].insert(n, (source_time, 1))
-                                break
-                if msg.type == "program_change":
-                    program = str(msg.program)
-                    channel = msg.channel
-                    if channel not in info_list:
-                        info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
-                    if channel != 9:
-                        if cvt_setting[7] == 2:
-                            if program in asset_list["setting"]["asset"]["java"]["sound_list"]:
-                                value = asset_list["setting"]["asset"]["java"]["sound_list"][program]
-                            else:
-                                value = asset_list["setting"]["asset"]["java"]["sound_list"]["undefined"]
-                        else:
-                            if program in asset_list["setting"]["asset"]["bedrock"]["sound_list"]:
-                                value = asset_list["setting"]["asset"]["bedrock"]["sound_list"][program]
-                            else:
-                                value = asset_list["setting"]["asset"]["bedrock"]["sound_list"]["undefined"]
-                        for n, typ in enumerate(info_list[channel]["program"]):
-                            if typ[0] >= source_time:
-                                info_list[channel]["program"].insert(n, (source_time, value))
                                 break
                 if msg.type == "note_on":
                     note = msg.note - 21
@@ -258,7 +228,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                     velocity = msg.velocity / 127
                     if velocity != 0:
                         if channel not in info_list:
-                            info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
+                            info_list[channel] = {"volume": [(float("INF"), 1)]}
                         if cvt_setting[9] != 0 and channel != 9:
                             volume = 1
                             for vol in info_list[channel]["volume"]:
@@ -293,15 +263,6 @@ def convertor(midi_path, midi_name, cvt_setting):
                             offset_time = 0
                         progress += 1
                         progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
-        tempo_num = len(tempo_list)
-        if tempo_num:
-            for n in range(tempo_num):
-                for i in range(tempo_num - n - 1):
-                    if tempo_list[i][0] > tempo_list[i + 1][0]:
-                        tempo_list[i], tempo_list[i + 1] = tempo_list[i + 1], tempo_list[i]
-        else:
-            tempo_list = [(0, 500000)]
-        tempo_list.append((float("INF"), tempo_list[-1][1]))
         if offset_time:
             tick_time = 0
             for n in range(1, len(tempo_list)):
@@ -335,14 +296,75 @@ def convertor(midi_path, midi_name, cvt_setting):
                 total_vol += n[1] * volume
             total_vol /= num
             total_vol = int(cvt_setting[0] / total_vol) / 100
+        if cvt_setting[5] == 1:
+            append_num = 2
+        elif cvt_setting[5] == 2:
+            append_num = 2
+        else:
+            append_num = 0
         num = 0
         note_len = len(asset_list["setting"]["asset"]["note_list"])
         time_list = []
+        info_list = {}
         note_buffer = {}
         for track in mid.tracks:
             source_time = 0
             for msg in track:
                 source_time += msg.time
+                if msg.type == "set_tempo":
+                    for n, tmp in enumerate(tempo_list):
+                        if tmp[0] > source_time:
+                            tempo_list.insert(n, (source_time, msg.tempo))
+                            break
+                if msg.type == "control_change":
+                    channel = msg.channel
+                    if channel not in info_list:
+                        info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
+                    if msg.control == 7:
+                        value = int(msg.value / 1.27) / 100
+                        for n, vol in enumerate(info_list[channel]["volume"]):
+                            if vol[0] >= source_time:
+                                info_list[channel]["volume"].insert(n, (source_time, value))
+                                break
+                    elif msg.control == 8 or msg.control == 10:
+                        value = msg.value - 64
+                        if value > 0:
+                            value = value / -63
+                        elif value < 0:
+                            value = value / -64
+                        for n, bal in enumerate(info_list[channel]["balance"]):
+                            if bal[0] > source_time:
+                                info_list[channel]["balance"].insert(n, (source_time, value))
+                                break
+                    elif msg.control == 121:
+                        for n, bal in enumerate(info_list[channel]["balance"]):
+                            if bal[0] > source_time:
+                                info_list[channel]["balance"].insert(n, (source_time, 0))
+                                break
+                        for n, vol in enumerate(info_list[channel]["volume"]):
+                            if vol[0] > source_time:
+                                info_list[channel]["volume"].insert(n, (source_time, 1))
+                                break
+                if msg.type == "program_change":
+                    program = str(msg.program)
+                    channel = msg.channel
+                    if channel not in info_list:
+                        info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
+                    if channel != 9:
+                        if cvt_setting[7] == 2:
+                            if program in asset_list["setting"]["asset"]["java"]["sound_list"]:
+                                value = asset_list["setting"]["asset"]["java"]["sound_list"][program]
+                            else:
+                                value = asset_list["setting"]["asset"]["java"]["sound_list"]["undefined"]
+                        else:
+                            if program in asset_list["setting"]["asset"]["bedrock"]["sound_list"]:
+                                value = asset_list["setting"]["asset"]["bedrock"]["sound_list"][program]
+                            else:
+                                value = asset_list["setting"]["asset"]["bedrock"]["sound_list"]["undefined"]
+                        for n, typ in enumerate(info_list[channel]["program"]):
+                            if typ[0] > source_time:
+                                info_list[channel]["program"].insert(n, (source_time, value))
+                                break
                 if msg.type == "note_on":
                     note = msg.note - 21
                     channel = msg.channel
@@ -381,9 +403,19 @@ def convertor(midi_path, midi_name, cvt_setting):
                                     break
                                 else:
                                     program = typ[1]
-                        velocity = int((velocity / 1.27) * volume * total_vol) / 100
+                        if cvt_setting[10]:
+                            velocity = int((velocity / 1.27) * volume * total_vol * program[1]) / 100
+                        else:
+                            velocity = int((velocity / 1.27) * volume * total_vol) / 100
                         if velocity >= 1:
                             velocity = 1
+                        if channel == 9:
+                            pitch = 1
+                        else:
+                            if 0 <= note < note_len:
+                                pitch = asset_list["setting"]["asset"]["note_list"][note + pitch_offset]
+                            else:
+                                pitch = None
                         tick_time = 0
                         for n in range(1, len(tempo_list)):
                             if tempo_list[n][0] <= source_time:
@@ -392,13 +424,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                                 tick_time += tick2second(source_time - tempo_list[n - 1][0], mid.ticks_per_beat, tempo_list[n - 1][1]) * 2000 / cvt_setting[2]
                                 break
                         tick_time = int(round(tick_time - offset_time))
-                        if cvt_setting[5] == 1:
-                            append_num = 2
-                        elif cvt_setting[5] == 2:
-                            append_num = 2
-                        else:
-                            append_num = 0
-                        if (cvt_setting[4] or channel != 9) and ((cvt_setting[5] == 0 or num <= h - append_num) and (channel == 9 or ((0 <= note < note_len) and (cvt_setting[9] == 0 or 0.5 <= asset_list["setting"]["asset"]["note_list"][note + pitch_offset] <= 2)))):
+                        if (cvt_setting[4] or channel != 9) and ((cvt_setting[5] == 0 or num <= h - append_num) and (channel == 9 or (pitch is not None and (cvt_setting[9] == 0 or 0.5 <= pitch <= 2)))):
                             if state[3][7] == 3:
                                 raw_text = "WD " + to_text(note, 2)
                             else:
@@ -420,17 +446,18 @@ def convertor(midi_path, midi_name, cvt_setting):
                                         raw_text = asset_list["setting"]["asset"]["bedrock"]["command_address"]
                                     else:
                                         raw_text = ""
-                                if channel == 9:
-                                    pitch = 1
-                                else:
-                                    pitch = asset_list["setting"]["asset"]["note_list"][note + pitch_offset]
-                                raw_text = raw_text.replace("{SOUND}", str(program)).replace("{BALANCE}", str(balance)).replace("{VOLUME}", str(velocity)).replace("{PITCH}", str(pitch)).replace("{TIME}", str(tick_time)).replace("{ADDRESS}", str(play_id))
+                                if cvt_setting[10]:
+                                    pitch *= program[2]
+                                raw_text = raw_text.replace("{SOUND}", str(program[0])).replace("{BALANCE}", str(balance)).replace("{VOLUME}", str(velocity)).replace("{PITCH}", str(pitch)).replace("{TIME}", str(tick_time)).replace("{ADDRESS}", str(play_id))
                             if tick_time not in note_buffer:
                                 note_buffer[tick_time] = []
                             if tick_time not in time_list:
                                 time_list.append(tick_time)
                             note_buffer[tick_time].append(raw_text)
                             num += 1
+                        else:
+                            if cvt_setting[7] != 0:
+                                progress += 1
                         progress += 1
                         progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
         time_list.sort()
@@ -670,6 +697,7 @@ def save_json():
         asset_list["setting"]["setting"]["append_number"] = int(state[3][6])
         asset_list["setting"]["setting"]["file_type"] = state[3][7]
         asset_list["setting"]["setting"]["range_limit"] = state[3][9]
+        asset_list["setting"]["setting"]["adjust_instrument"] = int(state[3][10])
         with open("Asset/text/setting.json", "w") as io:
             io.write(dump_bytes(asset_list["setting"], indent=2))
     except Exception:
@@ -864,7 +892,12 @@ def next_page():
             state[3][9] += 1
             if state[3][9] >= 3:
                 state[3][9] = 0
-        elif len(asset_list["serial_list"]) != 0 and state[1][0] == 10:
+        elif state[1][0] == 10:
+            if state[3][10]:
+                state[3][10] = False
+            else:
+                state[3][10] = True
+        elif len(asset_list["serial_list"]) != 0 and state[1][0] == 11:
             state[3][8] += 1
             if state[3][8] >= len(asset_list["serial_list"]):
                 state[3][8] = 0
@@ -1068,7 +1101,7 @@ def setting_blit(setting):
             del message_list[0]
 
 log = [[False, True], ["Loading:"], ["Main:"], ["Convertor:"], ["Updater:"], ["Other:"]]
-state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0, 0, 0], False, None, [0, 0, True], 0, [0, 0], -1]
+state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0, 0, 0, 0], False, None, [0, 0, True], 0, [0, 0], -1]
 
 try:
     display.init()
@@ -1211,7 +1244,7 @@ try:
             window.blit(asset_list["blur_pic"][0], (0, 0))
             setting_text = ([["开始转换  ", 2], ["音量均衡  ", 1], ["播放速度  ", 1], ["静音跳过  ", 1],
                              ["打击乐器  ", 1], ["播放模式  ", 1], ["添加序号  ", 1], ["输出模式  ", 1],
-                             ["结构模板  ", 1], ["音域调整  ", 1], ["串口设备  ", 1]])
+                             ["结构模板  ", 1], ["音域调整  ", 1], ["乐器调整  ", 1], ["串口设备  ", 1]])
             setting_text[0][0] += midi_file[1][0:-4]
             if state[3][0] == 0:
                 setting_text[1][0] += "关"
@@ -1261,8 +1294,12 @@ try:
                 setting_text[9][0] += "限幅 (JE)"
             elif state[3][9] == 2:
                 setting_text[9][0] += "自动 (JE)"
+            if state[3][10]:
+                setting_text[10][0] += "开"
+            else:
+                setting_text[10][0] += "关"
             if len(asset_list["serial_list"]) != 0:
-                setting_text[10][0] += asset_list["serial_list"][state[3][8]][1]
+                setting_text[11][0] += asset_list["serial_list"][state[3][8]][1]
             setting_blit(setting_text)
         elif state[0] == 5:
             window.blit(asset_list["blur_pic"][0], (0, 0))
