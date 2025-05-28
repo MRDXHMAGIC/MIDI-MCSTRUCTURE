@@ -756,46 +756,49 @@ def download():
 
 def setting_help():
     if state[0] == 3:
-        message_list.append(("按任意键进入软件。", -1))
+        message_list.append(("按任意键进入软件", -1))
     if state[0] == 3:
         if state[4]:
-            message_list.append(("鼠标左键打开文件，右键返回，滚轮切换。", -1))
+            message_list.append(("鼠标左键打开文件，右键返回，滚轮切换", -1))
         else:
-            message_list.append(("键盘右方向键打开文件，左方向键返回，上下方向键切换。", -1))
+            message_list.append(("键盘右方向键打开文件，左方向键返回，上下方向键切换", -1))
     elif state[0] == 4:
         if state[1][0] == 0:
             if state[4]:
-                message_list.append(("点击鼠标左键应用设置并开始转换。", -1))
+                message_list.append(("点击鼠标左键应用设置并开始转换", -1))
             else:
-                message_list.append(("点击键盘右方向键应用设置并开始转换。", -1))
+                message_list.append(("点击键盘右方向键应用设置并开始转换", -1))
         elif state[1][0] == 1:
-            message_list.append(("使不同音乐间的音量与设定值一致，统一听感。", -1))
+            message_list.append(("使不同音乐间的音量与设定值一致，统一听感", -1))
         elif state[1][0] == 2:
-            message_list.append(("调整音乐的播放速度，一般用于缓解音频卡顿。", -1))
+            message_list.append(("调整音乐的播放速度，一般用于缓解音频卡顿", -1))
         elif state[1][0] == 3:
-            message_list.append(("跳过音乐开头静音的部分，大部分情况下建议开启。", -1))
+            message_list.append(("跳过音乐开头静音的部分，大部分情况下建议开启", -1))
         elif state[1][0] == 4:
-            message_list.append(("移除所有轨道上的和弦来简化音乐，一般不建议使用。", -1))
+            message_list.append(("决定是否处理打击乐器（通道10上的乐器）", -1))
         elif state[1][0] == 5:
-            message_list.append(("选择控制播放时序的方式，一般选择低卡顿的命令链延迟。", -1))
+            message_list.append(("选择控制播放时序的方式，一般选择低卡顿的命令链延迟", -1))
         elif state[1][0] == 6:
-            message_list.append(("决定是否重命名命令方块名称为音符的序号和音乐名称。", -1))
+            message_list.append(("决定是否重命名命令方块名称为音符的序号和音乐名称", -1))
         elif state[1][0] == 7:
-            message_list.append(("决定输出文件类型，mcfunction不支持命令链延迟模式。", -1))
+            message_list.append(("决定输出文件类型，mcfunction不支持命令链延迟模式", -1))
         elif state[1][0] == 8:
-            message_list.append(("决定命令链排列方式，均为普通结构文件，用户可自制模板。", -1))
+            if state[3][7] == 0:
+                message_list.append(("决定命令链排列方式，均为普通结构文件，用户可自制模板", -1))
+            elif state[3][7] == 3:
+                message_list.append(("选择一个受支持的串口设备，来向其传输音乐数据", -1))
         elif state[1][0] == 9:
-            message_list.append(("自动升降音调并去除部分音符来适配JE版我的世界的音域。", -1))
+            message_list.append(("自动升降音调并去除部分音符来适配JE版我的世界的音域", -1))
         elif state[1][0] == 10:
-            message_list.append(("选择一个受支持的串口设备，来向其传输音乐数据。", -1))
+            message_list.append(("根据配置文件调整一些乐器的响度和音调，使其效果更自然", -1))
     elif state[0] == 5:
         if state[1][0] == 0:
             if state[4]:
-                message_list.append(("点击鼠标左键开始下载并应用更新。", -1))
+                message_list.append(("点击鼠标左键开始下载并应用更新", -1))
             else:
-                message_list.append(("点击键盘右方向键开始下载并应用更新。", -1))
+                message_list.append(("点击键盘右方向键开始下载并应用更新", -1))
         elif state[1][0] == 1:
-            message_list.append(("不再显示该版本更新的提示。", -1))
+            message_list.append(("不再显示该版本更新的提示", -1))
 
 def list_position(size, pos):
     n = pos[2]
@@ -841,8 +844,8 @@ def next_page():
             state[1] = [0, 0, -1]
             state[0] = 4
             asset_list["serial_list"] = []
-            for n, i in enumerate(list(serial.tools.list_ports.comports())):
-                i = list(i)
+            for n, i in enumerate(serial.tools.list_ports.comports()):
+                i = tuple(i)
                 if "Arduino Leonardo" in i[1]:
                     asset_list["serial_list"].insert(0, i)
                 else:
@@ -884,10 +887,15 @@ def next_page():
             state[3][7] += 1
             if state[3][7] >= 4:
                 state[3][7] = 0
-        elif asset_list.get("structure_file") and state[1][0] == 8:
-            state[3][1] += 1
-            if state[3][1] >= len(asset_list["structure_file"]):
-                state[3][1] = 0
+        elif state[1][0] == 8:
+            if state[3][7] == 0 and "structure_file" in asset_list:
+                state[3][1] += 1
+                if state[3][1] >= len(asset_list["structure_file"]):
+                    state[3][1] = 0
+            elif state[3][7] == 3 and len(asset_list["serial_list"]) != 0:
+                state[3][8] += 1
+                if state[3][8] >= len(asset_list["serial_list"]):
+                    state[3][8] = 0
         elif state[1][0] == 9:
             state[3][9] += 1
             if state[3][9] >= 3:
@@ -897,10 +905,6 @@ def next_page():
                 state[3][10] = False
             else:
                 state[3][10] = True
-        elif len(asset_list["serial_list"]) != 0 and state[1][0] == 11:
-            state[3][8] += 1
-            if state[3][8] >= len(asset_list["serial_list"]):
-                state[3][8] = 0
     elif state[0] == 5:
         if state[6][2] and state[1][0] == 0:
             Thread(target=download).start()
@@ -1169,7 +1173,7 @@ try:
             if env.type == KEYUP:
                 state[4] = False
                 if env.key == K_ESCAPE:
-                    exit()
+                    state[7] = 1
                 if state[0] != 2:
                     if env.key == K_TAB:
                         setting_help()
@@ -1244,7 +1248,7 @@ try:
             window.blit(asset_list["blur_pic"][0], (0, 0))
             setting_text = ([["开始转换  ", 2], ["音量均衡  ", 1], ["播放速度  ", 1], ["静音跳过  ", 1],
                              ["打击乐器  ", 1], ["播放模式  ", 1], ["添加序号  ", 1], ["输出模式  ", 1],
-                             ["结构模板  ", 1], ["音域调整  ", 1], ["乐器调整  ", 1], ["串口设备  ", 1]])
+                             ["暂无选项  ", 1], ["音域调整  ", 1], ["乐器调整  ", 1]])
             setting_text[0][0] += midi_file[1][0:-4]
             if state[3][0] == 0:
                 setting_text[1][0] += "关"
@@ -1274,6 +1278,9 @@ try:
                 setting_text[6][0] += "关"
             if state[3][7] == 0:
                 setting_text[7][0] += ".mcstructure"
+                setting_text[8] = ["结构模板  ", 1]
+                if asset_list.get("structure_file"):
+                    setting_text[8][0] += asset_list["structure_file"][state[3][1]][1]
             elif state[3][7] == 1:
                 setting_text[7][0] += ".mcfunction (BE)"
                 if state[3][5] == 0:
@@ -1286,8 +1293,9 @@ try:
                     setting_text[9][1] = 4
             elif state[3][7] == 3:
                 setting_text[7][0] += "串口设备"
-            if asset_list.get("structure_file"):
-                setting_text[8][0] += asset_list["structure_file"][state[3][1]][1]
+                setting_text[8] = ["串口设备  ", 1]
+                if len(asset_list["serial_list"]) != 0:
+                    setting_text[8][0] += asset_list["serial_list"][state[3][8]][1]
             if state[3][9] == 0:
                 setting_text[9][0] += "直出 (BE)"
             elif state[3][9] == 1:
@@ -1298,8 +1306,6 @@ try:
                 setting_text[10][0] += "开"
             else:
                 setting_text[10][0] += "关"
-            if len(asset_list["serial_list"]) != 0:
-                setting_text[11][0] += asset_list["serial_list"][state[3][8]][1]
             setting_blit(setting_text)
         elif state[0] == 5:
             window.blit(asset_list["blur_pic"][0], (0, 0))
