@@ -24,7 +24,7 @@ def asset_load():
         font.init()
         asset_list["font"] = font.Font("Asset/font/font.ttf", 28)
         state[2] = "完成更新中"
-        if path.isdir("Cache/Updater"):
+        if path.exists("Cache/Updater"):
             n = 0
             while n <= 16:
                 try:
@@ -36,9 +36,7 @@ def asset_load():
             move("Cache/Updater", "Updater")
             rmtree("Cache")
         state[2] = "加载配置文件中"
-        with open("Asset/text/manifest.json", "r") as io:
-            asset_list["manifest"] = dumps(load_bytes(io.read()))
-        with open("Asset/text/setting.json", "r") as io:
+        with open("Asset/text/setting.json", "rb") as io:
             asset_list["setting"] = load_bytes(io.read())
         asset_list["fps"] = asset_list["setting"]["setting"]["fps"]
         state[3][0] = int(asset_list["setting"]["setting"]["auto_gain"])
@@ -48,9 +46,19 @@ def asset_load():
         state[3][5] = int(asset_list["setting"]["setting"]["mode"])
         state[3][6] = bool(asset_list["setting"]["setting"]["append_number"])
         state[3][7] = int(asset_list["setting"]["setting"]["file_type"])
-        state[3][9] = int(asset_list["setting"]["setting"]["range_limit"])
+        state[3][9] = int(asset_list["setting"]["setting"]["adjust_pitch"])
         state[3][10] = bool(asset_list["setting"]["setting"]["adjust_instrument"])
         log[0][1] = bool(asset_list["setting"]["setting"]["log_level"])
+        with open("Asset/text/manifest.json", "rb") as io:
+            asset_list["manifest"] = dumps(load_bytes(io.read()))
+        asset_list["profile"] = []
+        for n in listdir("Asset/profile"):
+            with open("Asset/profile/" + n, "rb") as io:
+                i = load_bytes(io.read())
+                if "default" in i["description"]["feature"]:
+                    asset_list["profile"].insert(0, (i["description"]["name"], i))
+                else:
+                    asset_list["profile"].append((i["description"]["name"], i))
         if bool(asset_list["setting"]["setting"]["check_update"]):
             Thread(target=get_update_log).start()
         state[2] = "加载界面资源中"
@@ -120,11 +128,11 @@ def asset_load():
 def structure_load(n):
     with open("Asset/mcstructure/" + n, "rb") as structure:
         structure = NBTFile(structure, little_endian=True)
-    i = [dumps(structure),
+    i = (dumps(structure),
          str(structure["size"][0].value) +
          "*" + str(structure["size"][2].value) +
          "*" + str(structure["size"][1].value) +
-         "  " + path.splitext(n)[0]]
+         "  " + path.splitext(n)[0])
     if "推荐" in path.splitext(n)[0]:
         asset_list["structure_file"].insert(0, i)
     else:
@@ -303,7 +311,7 @@ def convertor(midi_path, midi_name, cvt_setting):
         else:
             append_num = 0
         num = 0
-        note_len = len(asset_list["setting"]["asset"]["note_list"])
+        note_len = len(asset_list["profile"][cvt_setting[11]][1]["note_list"])
         time_list = []
         info_list = {}
         note_buffer = {}
@@ -323,7 +331,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                     if msg.control == 7:
                         value = int(msg.value / 1.27) / 100
                         for n, vol in enumerate(info_list[channel]["volume"]):
-                            if vol[0] >= source_time:
+                            if vol[0] > source_time:
                                 info_list[channel]["volume"].insert(n, (source_time, value))
                                 break
                     elif msg.control == 8 or msg.control == 10:
@@ -352,15 +360,15 @@ def convertor(midi_path, midi_name, cvt_setting):
                         info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
                     if channel != 9:
                         if cvt_setting[7] == 2:
-                            if program in asset_list["setting"]["asset"]["java"]["sound_list"]:
-                                value = asset_list["setting"]["asset"]["java"]["sound_list"][program]
+                            if program in asset_list["profile"][cvt_setting[11]][1]["java"]["sound_list"]:
+                                value = asset_list["profile"][cvt_setting[11]][1]["java"]["sound_list"][program]
                             else:
-                                value = asset_list["setting"]["asset"]["java"]["sound_list"]["undefined"]
+                                value = asset_list["profile"][cvt_setting[11]][1]["java"]["sound_list"]["undefined"]
                         else:
-                            if program in asset_list["setting"]["asset"]["bedrock"]["sound_list"]:
-                                value = asset_list["setting"]["asset"]["bedrock"]["sound_list"][program]
+                            if program in asset_list["profile"][cvt_setting[11]][1]["bedrock"]["sound_list"]:
+                                value = asset_list["profile"][cvt_setting[11]][1]["bedrock"]["sound_list"][program]
                             else:
-                                value = asset_list["setting"]["asset"]["bedrock"]["sound_list"]["undefined"]
+                                value = asset_list["profile"][cvt_setting[11]][1]["bedrock"]["sound_list"]["undefined"]
                         for n, typ in enumerate(info_list[channel]["program"]):
                             if typ[0] > source_time:
                                 info_list[channel]["program"].insert(n, (source_time, value))
@@ -370,6 +378,8 @@ def convertor(midi_path, midi_name, cvt_setting):
                     channel = msg.channel
                     velocity = msg.velocity
                     if velocity != 0:
+                        if channel not in info_list:
+                            info_list[channel] = {"program": [(float("INF"), "")], "volume": [(float("INF"), 1)], "balance": [(float("INF"), "")]}
                         volume = 1
                         for vol in info_list[channel]["volume"]:
                             if vol[0] > source_time:
@@ -381,23 +391,23 @@ def convertor(midi_path, midi_name, cvt_setting):
                             if bal[0] > source_time:
                                 break
                             else:
-                                balance = bal[1]
+                                balance = round(bal[1], 2)
                         if channel == 9:
                             if cvt_setting[7] == 2:
-                                if str(note + 21) in asset_list["setting"]["asset"]["java"]["sound_list"]["percussion"]:
-                                    program = asset_list["setting"]["asset"]["java"]["sound_list"]["percussion"][str(note + 21)]
+                                if str(note + 21) in asset_list["profile"][cvt_setting[11]][1]["java"]["sound_list"]["percussion"]:
+                                    program = asset_list["profile"][cvt_setting[11]][1]["java"]["sound_list"]["percussion"][str(note + 21)]
                                 else:
-                                    program = asset_list["setting"]["asset"]["java"]["sound_list"]["percussion"]["undefined"]
+                                    program = asset_list["profile"][cvt_setting[11]][1]["java"]["sound_list"]["percussion"]["undefined"]
                             else:
-                                if str(note + 21) in asset_list["setting"]["asset"]["bedrock"]["sound_list"]["percussion"]:
-                                    program = asset_list["setting"]["asset"]["bedrock"]["sound_list"]["percussion"][str(note + 21)]
+                                if str(note + 21) in asset_list["profile"][cvt_setting[11]][1]["bedrock"]["sound_list"]["percussion"]:
+                                    program = asset_list["profile"][cvt_setting[11]][1]["bedrock"]["sound_list"]["percussion"][str(note + 21)]
                                 else:
-                                    program = asset_list["setting"]["asset"]["bedrock"]["sound_list"]["percussion"]["undefined"]
+                                    program = asset_list["profile"][cvt_setting[11]][1]["bedrock"]["sound_list"]["percussion"]["undefined"]
                         else:
                             if cvt_setting[7] == 2:
-                                program = asset_list["setting"]["asset"]["java"]["sound_list"]["default"]
+                                program = asset_list["profile"][cvt_setting[11]][1]["java"]["sound_list"]["default"]
                             else:
-                                program = asset_list["setting"]["asset"]["bedrock"]["sound_list"]["default"]
+                                program = asset_list["profile"][cvt_setting[11]][1]["bedrock"]["sound_list"]["default"]
                             for typ in info_list[channel]["program"]:
                                 if typ[0] > source_time:
                                     break
@@ -412,10 +422,12 @@ def convertor(midi_path, midi_name, cvt_setting):
                         if channel == 9:
                             pitch = 1
                         else:
-                            if 0 <= note < note_len:
-                                pitch = asset_list["setting"]["asset"]["note_list"][note + pitch_offset]
+                            if 0 <= note + pitch_offset < note_len:
+                                pitch = asset_list["profile"][cvt_setting[11]][1]["note_list"][note + pitch_offset]
                             else:
                                 pitch = None
+                        if cvt_setting[10] and pitch is not None:
+                            pitch *= program[2]
                         tick_time = 0
                         for n in range(1, len(tempo_list)):
                             if tempo_list[n][0] <= source_time:
@@ -424,30 +436,28 @@ def convertor(midi_path, midi_name, cvt_setting):
                                 tick_time += tick2second(source_time - tempo_list[n - 1][0], mid.ticks_per_beat, tempo_list[n - 1][1]) * 2000 / cvt_setting[2]
                                 break
                         tick_time = int(round(tick_time - offset_time))
-                        if (cvt_setting[4] or channel != 9) and ((cvt_setting[5] == 0 or num <= h - append_num) and (channel == 9 or (pitch is not None and (cvt_setting[9] == 0 or 0.5 <= pitch <= 2)))):
+                        if (program[0] != "disable" and (cvt_setting[4] or channel != 9)) and ((cvt_setting[7] != 0 or num <= h - append_num) and (pitch is not None and (cvt_setting[9] == 0 or 0.5 <= pitch <= 2))):
                             if state[3][7] == 3:
                                 raw_text = "WD " + to_text(note, 2)
                             else:
                                 if cvt_setting[7] == 2:
                                     if cvt_setting[5] == 0:
-                                        raw_text = asset_list["setting"]["asset"]["java"]["command_delay"]
+                                        raw_text = asset_list["profile"][cvt_setting[11]][1]["java"]["command"]["command_delay"]
                                     elif cvt_setting[5] == 1:
-                                        raw_text = asset_list["setting"]["asset"]["java"]["command_clock"]
+                                        raw_text = asset_list["profile"][cvt_setting[11]][1]["java"]["command"]["command_clock"]
                                     elif cvt_setting[5] == 2:
-                                        raw_text = asset_list["setting"]["asset"]["java"]["command_address"]
+                                        raw_text = asset_list["profile"][cvt_setting[11]][1]["java"]["command"]["command_address"]
                                     else:
                                         raw_text = ""
                                 else:
                                     if cvt_setting[5] == 0:
-                                        raw_text = asset_list["setting"]["asset"]["bedrock"]["command_delay"]
+                                        raw_text = asset_list["profile"][cvt_setting[11]][1]["bedrock"]["command"]["command_delay"]
                                     elif cvt_setting[5] == 1:
-                                        raw_text = asset_list["setting"]["asset"]["bedrock"]["command_clock"]
+                                        raw_text = asset_list["profile"][cvt_setting[11]][1]["bedrock"]["command"]["command_clock"]
                                     elif cvt_setting[5] == 2:
-                                        raw_text = asset_list["setting"]["asset"]["bedrock"]["command_address"]
+                                        raw_text = asset_list["profile"][cvt_setting[11]][1]["bedrock"]["command"]["command_address"]
                                     else:
                                         raw_text = ""
-                                if cvt_setting[10]:
-                                    pitch *= program[2]
                                 raw_text = raw_text.replace("{SOUND}", str(program[0])).replace("{BALANCE}", str(balance)).replace("{VOLUME}", str(velocity)).replace("{PITCH}", str(pitch)).replace("{TIME}", str(tick_time)).replace("{ADDRESS}", str(play_id))
                             if tick_time not in note_buffer:
                                 note_buffer[tick_time] = []
@@ -469,6 +479,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                                                   )
                 note_buffer[time_list[-1]].append("/scoreboard players add @a[scores={MMS_Service=0..}] MMS_Service 1")
                 total += 2
+                num += 2
             elif cvt_setting[5] == 2:
                 note_buffer[time_list[-1]].append("/scoreboard players set @a[scores={MMS_Service="
                                                   + str(time_list[-1]) + "..,"
@@ -478,6 +489,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                                                   + "MMS_Address=" + str(play_id)
                                                   + "}] MMS_Service 1")
                 total += 2
+                num += 2
         else:
             if cvt_setting[5] == 1:
                 note_buffer[time_list[-1]].append("/scoreboard players set @a[scores={MMS_Service="
@@ -485,6 +497,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                                                   + "..}] MMS_Service -1"
                                                   )
                 note_buffer[time_list[-1]].append("/scoreboard players add @a[scores={MMS_Service=0..}] MMS_Service 1")
+                num += 2
                 if cvt_setting[7] == 1:
                     total += 2
             elif cvt_setting[5] == 2:
@@ -495,6 +508,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                 note_buffer[time_list[-1]].append("/scoreboard players add @a[scores={MMS_Service=0..,"
                                                   + "MMS_Address=" + str(play_id)
                                                   + "}] MMS_Service 1")
+                num += 2
                 if cvt_setting[7] == 1:
                     total += 2
         if cvt_setting[7] == 0:
@@ -696,7 +710,7 @@ def save_json():
         asset_list["setting"]["setting"]["mode"] = state[3][5]
         asset_list["setting"]["setting"]["append_number"] = int(state[3][6])
         asset_list["setting"]["setting"]["file_type"] = state[3][7]
-        asset_list["setting"]["setting"]["range_limit"] = state[3][9]
+        asset_list["setting"]["setting"]["adjust_pitch"] = state[3][9]
         asset_list["setting"]["setting"]["adjust_instrument"] = int(state[3][10])
         with open("Asset/text/setting.json", "w") as io:
             io.write(dump_bytes(asset_list["setting"], indent=2))
@@ -756,8 +770,6 @@ def download():
 
 def setting_help():
     if state[0] == 3:
-        message_list.append(("按任意键进入软件", -1))
-    if state[0] == 3:
         if state[4]:
             message_list.append(("鼠标左键打开文件，右键返回，滚轮切换", -1))
         else:
@@ -791,6 +803,8 @@ def setting_help():
             message_list.append(("自动升降音调并去除部分音符来适配JE版我的世界的音域", -1))
         elif state[1][0] == 10:
             message_list.append(("根据配置文件调整一些乐器的响度和音调，使其效果更自然", -1))
+        elif state[1][0] == 11:
+            message_list.append(("选择乐器的匹配和调整方案，以达到不同的播放效果", -1))
     elif state[0] == 5:
         if state[1][0] == 0:
             if state[4]:
@@ -905,6 +919,10 @@ def next_page():
                 state[3][10] = False
             else:
                 state[3][10] = True
+        elif state[1][0] == 11:
+            state[3][11] += 1
+            if state[3][11] >= len(asset_list["profile"]):
+                state[3][11] = 0
     elif state[0] == 5:
         if state[6][2] and state[1][0] == 0:
             Thread(target=download).start()
@@ -1105,12 +1123,12 @@ def setting_blit(setting):
             del message_list[0]
 
 log = [[False, True], ["Loading:"], ["Main:"], ["Convertor:"], ["Updater:"], ["Other:"]]
-state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0, 0, 0, 0], False, None, [0, 0, True], 0, [0, 0], -1]
+state = [0, [0, 0, -1], "init", [0, 0, 100, True, 0, 0, False, 0, 0, 0, 0, 0], False, None, [0, 0, True], 0, [0, 0], -1]
 
 try:
     display.init()
     DisplaySize = (800, 450)
-    display.set_icon(image.load("Asset/image/icon.png"))
+    display.set_icon(image.load("Asset/image/icon.ico"))
     window = display.set_mode(DisplaySize)
     display.set_caption("MIDI-MCSTRUCTURE GUI")
 
@@ -1248,7 +1266,7 @@ try:
             window.blit(asset_list["blur_pic"][0], (0, 0))
             setting_text = ([["开始转换  ", 2], ["音量均衡  ", 1], ["播放速度  ", 1], ["静音跳过  ", 1],
                              ["打击乐器  ", 1], ["播放模式  ", 1], ["添加序号  ", 1], ["输出模式  ", 1],
-                             ["暂无选项  ", 1], ["音域调整  ", 1], ["乐器调整  ", 1]])
+                             ["暂无选项  ", 1], ["音域调整  ", 1], ["乐器调整  ", 1], ["配置文件  ", 1]])
             setting_text[0][0] += midi_file[1][0:-4]
             if state[3][0] == 0:
                 setting_text[1][0] += "关"
@@ -1306,6 +1324,8 @@ try:
                 setting_text[10][0] += "开"
             else:
                 setting_text[10][0] += "关"
+            if len(asset_list["profile"]) != 0:
+                setting_text[11][0] += asset_list["profile"][state[3][11]][0]
             setting_blit(setting_text)
         elif state[0] == 5:
             window.blit(asset_list["blur_pic"][0], (0, 0))
