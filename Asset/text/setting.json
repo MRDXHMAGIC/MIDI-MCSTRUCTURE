@@ -1,0 +1,36 @@
+{
+  "setting": {
+    "fps": 120,
+    "version": "25250619",
+    "edition": "PreEdition",
+    "auto_gain": 30,
+    "speed": 100,
+    "skip": 1,
+    "enable_percussion": 0,
+    "mode": 0,
+    "append_number": 0,
+    "id": -1,
+    "file_type": 0,
+    "log_level": 1,
+    "adjust_pitch": 0,
+    "adjust_instrument": 1,
+    "color": [
+      [
+        255,
+        255,
+        255,
+        255
+      ],
+      [
+        255,
+        255,
+        255,
+        144
+      ]
+    ],
+    "background_hash": "",
+    "check_update": 1,
+    "exceptional_version": [],
+    "license": 1
+  }
+}
