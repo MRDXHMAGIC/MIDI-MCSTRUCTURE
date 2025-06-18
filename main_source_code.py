@@ -804,7 +804,7 @@ def setting_help():
         elif state[1][0] == 10:
             message_list.append(("根据配置文件调整一些乐器的响度和音调，使其效果更自然", -1))
         elif state[1][0] == 11:
-            message_list.append(("选择乐器的匹配和调整方案，以达到不同的播放效果", -1))
+            message_list.append(("选择乐器和指令方案，以达到不同的播放效果", -1))
     elif state[0] == 5:
         if state[1][0] == 0:
             if state[4]:
