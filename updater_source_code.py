@@ -15,7 +15,7 @@ def save_log(log_position, log_type, log_info):
             log[log_position].append("  " + info)
 
 log = [[False, True], ["Updater:"]]
-root = path.abspath("")[:-8] + "\\"
+root = path.split(path.realpath(__file__))[0][:-18].replace("\\", "/") + "/"
 
 try:
     sleep(0.1)
