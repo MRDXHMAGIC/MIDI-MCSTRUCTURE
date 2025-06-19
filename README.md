@@ -32,7 +32,8 @@ MIDI转我的世界基岩版mcstructure，Java版或基岩版mcfunction。
 | 时钟与编号 | 在计分板时钟基础上，为每次分配一个不重复的ID | 易控制播放，支持多人 | 高卡顿    |
 
 补充：
-MIDI-MCSTRUCUTRE支持自定义命令，修改配置文件([setting.json](https://gitee.com/mrdxhmagic/midi-mcstructure/raw/master/Asset/text/setting.json))的内容即可更改指令。
+MIDI-MCSTRUCUTRE支持自定义命令，修改默认配置文件([default.json](https://gitee.com/mrdxhmagic/midi-mcstructure/raw/master/Asset/text/setting.json))的内容或新建一个配置文件即可更改指令。
+所有配置文件存储在[Asset/profile](https://gitee.com/mrdxhmagic/midi-mcstructure/tree/master/Asset/profile)文件夹中，可自行修改或增加配置文件。
 默认指令（使用基岩版举例）如下：
 
 ```
@@ -44,7 +45,7 @@ MIDI-MCSTRUCUTRE支持自定义命令，修改配置文件([setting.json](https:
 ```
 
 程序会自动识别命令链方向，依次写入指令。其中{SOUND}用于获取乐器ID；{BALANCE}用于获取左右声道平衡信息（MIDI文件中不存在平衡信息时为空）；{VOLUME}用于获取音量；
-{PITCH}用于获取音高（[数据来源](https://b23.tv/mQuuE1T)）；{TIME}用于获取现在的时间（仅限计分板时钟和时钟与编号模式，命令链延迟模式会将间隔写入到执行延迟中）；
+{PITCH}用于获取音高；{TIME}用于获取现在的时间（仅限计分板时钟和时钟与编号模式，命令链延迟模式会将间隔写入到执行延迟中）；
 {ADDRESS}用于获取一个唯一的编号（每一次转换的文件内该值相同，每个文件之间不同）。在写入指令时以上关键字会被替换为对应的信息。
 
 另外，在计分板时钟或时钟与编号模式下MMS软件会在命令链最后添加两条计时指令。
@@ -72,3 +73,71 @@ mcstructure(BE)生成基岩版结构文件；mcfunction(BE)/mcfunction(JE)生成
 
 9. 音域限制
 因Java版不允许播放音调小于0.5或大于2.0，因此转换Java版文件时需调整该选项为限幅或自动。
+
+10. 乐器调整
+根据配置文件调整乐这里输入引用文本器的音调和音量，使其效果更自然。如钢琴通常作为主旋律，通过调小钢琴的音量来使伴奏更突出，达到丰富听感的作用。
+
+补充：
+所有配置文件存储在[Asset/profile](https://gitee.com/mrdxhmagic/midi-mcstructure/tree/master/Asset/profile)文件夹中，与上文的指令模板在同一个文件中。
+大体框架如下：
+
+```
+{
+  "description": {
+    "name": "实例",
+    "author": "Project-MMS",
+    "feature": [
+      "default",
+      "java",
+      "bedrock"
+    ]
+  },
+  "note_list": [],
+  "bedrock": {
+    "command": {
+      "command_delay": "",
+      "command_clock": "",
+      "command_address": ""
+    },
+    "sound_list": {
+      "undefined": ["note.harp", 1.0, 1.0],
+      "default": ["note.harp", 1.0, 1.0],
+      "0": ["note.harp", 0.53, 1.0],
+      "percussion": {
+        "undefined": ["dig.sand", 1.0, 1.0],
+        "31": ["note.hat", 1.0, 1.0]
+      }
+    }
+  },
+  "java": {
+    "command": {
+      "command_delay": "",
+      "command_clock": "",
+      "command_address": ""
+    },
+    "sound_list": {
+      "undefined": ["block.note_block.harp", 1.0, 1.0],
+      "default": ["block.note_block.harp", 1.0, 1.0],
+      "0": ["block.note_block.harp", 1.0, 1.0],
+      "percussion": {
+        "undefined": ["block.sand.break", 1.0, 1.0],
+        "31": ["block.note_block.hat", 1.0, 1.0]
+      }
+    }
+  }
+}
+```
+
+description中是对该文件的描述，其中name是在软件中显示的名称；author是作者名，暂无用处；feature是对文件功能的描述，其中若包含"default"则每次启动软件时都会将该文件作为首选项，其他字段无用处；note_list是音调，应从首到尾按数字由小到大排序（[默认数据来源](https://b23.tv/mQuuE1T)）；bedrock和java是两个游戏版本的指令和音色配置，其中command具体见上文播放模式，sound_list是音色配置，其中percussion是打击乐器配置，undefined是指定遇到没有配置的乐器时使用的的乐器，default指定每个MIDI通道默认乐器，使用  MIDI乐器编号（字符串）: [游戏音色名称（字符串）, 响度（浮点数）, 音调（浮点数，与原来音调相乘）]  定义乐器。
+
+11. 配置文件
+当有多个配置文件时可在软件中选择使用其中的一个配置文件。
+
+### 致谢
+排名不分先后！
+
+[孤寡牢宇](https://m.bilibili.com/space/169253838?&unique_k=2333) 指出软件的配置文件中基岩版指令的错误。
+
+[蒙德城的大肥鹅](https://m.bilibili.com/space/1233311179?&unique_k=2333) 指出软件无法处理部分MIDI音乐的问题。
+
+以及任何使用或支持本软件的人！
