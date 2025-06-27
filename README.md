@@ -128,7 +128,7 @@ mcstructure(BE)生成基岩版结构文件；mcfunction(BE)/mcfunction(JE)生成
 }
 ```
 
-description中是对该文件的描述，其中name是在软件中显示的名称；author是作者名，暂无用处；feature是对文件功能的描述，其中若包含"default"则每次启动软件时都会将该文件作为首选项，其他字段无用处；note_list是音调，应从首到尾按数字由小到大排序（[默认数据来源](https://b23.tv/mQuuE1T)）；bedrock和java是两个游戏版本的指令和音色配置，其中command具体见上文播放模式，sound_list是音色配置，其中percussion是打击乐器配置，undefined是指定遇到没有配置的乐器时使用的的乐器，default指定每个MIDI通道默认乐器，使用  MIDI乐器编号（字符串）: [游戏音色名称（字符串）, 响度（浮点数）, 音调（浮点数，与原来音调相乘）]  定义乐器。
+description中是对该文件的描述，其中name是在软件中显示的名称；author是作者名，暂无用处；feature是对文件功能的描述，其中若包含"default"则每次启动软件时都会将该文件作为首选项，包含"old_edition"则启用老版本语法与文件结构，其余字段无用处；note_list是音调，应从首到尾按数字由小到大排序（[默认数据来源](https://b23.tv/mQuuE1T)）；bedrock和java是两个游戏版本的指令和音色配置，其中command具体见上文播放模式，sound_list是音色配置，其中percussion是打击乐器配置，undefined是指定遇到没有配置的乐器时使用的的乐器，default指定每个MIDI通道默认乐器，使用  MIDI乐器编号（字符串）: [游戏音色名称（字符串）, 响度（浮点数）, 音调（浮点数，与原来音调相乘）]  定义乐器。
 
 11. 配置文件
 当有多个配置文件时可在软件中选择使用其中的一个配置文件。
@@ -139,5 +139,7 @@ description中是对该文件的描述，其中name是在软件中显示的名�
 [孤寡牢宇](https://m.bilibili.com/space/169253838?&unique_k=2333) 指出软件的配置文件中基岩版指令的错误。
 
 [蒙德城的大肥鹅](https://m.bilibili.com/space/1233311179?&unique_k=2333) 指出软件无法处理部分MIDI音乐的问题。
+
+[一只很妙的鸟](https://m.bilibili.com/space/516719165?&unique_k=2333) 建议并帮助软件加入对老版本游戏的支持。
 
 以及任何使用或支持本软件的人！
