@@ -244,26 +244,27 @@ def convertor(midi_path, midi_name, cvt_setting):
                                     break
                                 else:
                                     volume = vol[1]
+                            velocity *= volume
                             if 0 <= note <= 2:
-                                pitch_list[0] += velocity * volume * 0.2
+                                pitch_list[0] += velocity
                             elif 3 <= note <= 14:
-                                pitch_list[1] += velocity * volume * 0.225
+                                pitch_list[1] += velocity
                             elif 15 <= note <= 26:
-                                pitch_list[2] += velocity * volume * 0.25
+                                pitch_list[2] += velocity
                             elif 27 <= note <= 38:
-                                pitch_list[3] += velocity * volume * 0.275
+                                pitch_list[3] += velocity
                             elif 39 <= note <= 50:
-                                pitch_list[4] += velocity * volume * 0.3
+                                pitch_list[4] += velocity
                             elif 51 <= note <= 62:
-                                pitch_list[5] += velocity * volume * 0.275
+                                pitch_list[5] += velocity
                             elif 63 <= note <= 74:
-                                pitch_list[6] += velocity * volume * 0.25
+                                pitch_list[6] += velocity
                             elif 75 <= note <= 86:
-                                pitch_list[7] += velocity * volume * 0.225
+                                pitch_list[7] += velocity
                             elif note == 87:
-                                pitch_list[8] += velocity * volume * 0.2
+                                pitch_list[8] += velocity
                         if cvt_setting[0] != 0:
-                            velocity_list.append((source_time, velocity, channel))
+                            velocity_list.append(velocity)
                         if cvt_setting[3]:
                             if (cvt_setting[4] or channel != 9) and (offset_time == -1 or source_time < offset_time):
                                 offset_time = source_time
@@ -293,15 +294,9 @@ def convertor(midi_path, midi_name, cvt_setting):
             num = 0
             total_vol = 0
             velocity_list.sort()
-            for n in velocity_list[int(round(len(velocity_list) * 0.1)):int(round(len(velocity_list) * 0.9))]:
+            for n in velocity_list:
+                total_vol += n
                 num += 1
-                volume = 1
-                for vol in info_list[n[2]]["volume"]:
-                    if vol[0] > n[0]:
-                        break
-                    else:
-                        volume = vol[1]
-                total_vol += n[1] * volume
             total_vol /= num
             total_vol = int(cvt_setting[0] / total_vol) / 100
         if cvt_setting[5] == 1:
@@ -391,7 +386,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                             if bal[0] > source_time:
                                 break
                             else:
-                                balance = round(bal[1], 2)
+                                balance = round_45(bal[1], 2)
                         if channel == 9:
                             if cvt_setting[7] == 2:
                                 if str(note + 21) in asset_list["profile"][cvt_setting[11]][1]["java"]["sound_list"]["percussion"]:
@@ -435,7 +430,7 @@ def convertor(midi_path, midi_name, cvt_setting):
                             else:
                                 tick_time += tick2second(source_time - tempo_list[n - 1][0], mid.ticks_per_beat, tempo_list[n - 1][1]) * 2000 / cvt_setting[2]
                                 break
-                        tick_time = int(round(tick_time - offset_time))
+                        tick_time = int(round_45(tick_time - offset_time))
                         if (program[0] != "disable" and (cvt_setting[4] or channel != 9)) and ((cvt_setting[7] != 0 or num <= h - append_num) and (pitch is not None and (cvt_setting[9] == 0 or 0.5 <= pitch <= 2))):
                             if state[3][7] == 3:
                                 raw_text = "WD " + to_text(note, 2)
@@ -472,24 +467,47 @@ def convertor(midi_path, midi_name, cvt_setting):
                         progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
         time_list.sort()
         if cvt_setting[7] == 2:
-            if cvt_setting[5] == 1:
-                note_buffer[time_list[-1]].append("/scoreboard players set @a[scores={MMS_Service="
-                                                  + str(time_list[-1])
-                                                  + "..}] MMS_Service -1"
-                                                  )
-                note_buffer[time_list[-1]].append("/scoreboard players add @a[scores={MMS_Service=0..}] MMS_Service 1")
-                total += 2
-                num += 2
-            elif cvt_setting[5] == 2:
-                note_buffer[time_list[-1]].append("/scoreboard players set @a[scores={MMS_Service="
-                                                  + str(time_list[-1]) + "..,"
-                                                  + "MMS_Address=" + str(play_id) + "}] MMS_Service -1"
-                                                  )
-                note_buffer[time_list[-1]].append("/scoreboard players add @a[scores={MMS_Service=0..,"
-                                                  + "MMS_Address=" + str(play_id)
-                                                  + "}] MMS_Service 1")
-                total += 2
-                num += 2
+            if "old_edition" in asset_list["profile"][cvt_setting[11]][1]["description"]["feature"]:
+                if cvt_setting[5] == 1:
+                    note_buffer[time_list[-1]].append("/scoreboard players set @a[score_MMS_Service_min="
+                                                      + str(time_list[-1])
+                                                      + "] MMS_Service -1"
+                                                      )
+                    note_buffer[time_list[-1]].append("/scoreboard players add @a[score_MMS_Service_min=0] MMS_Service 1")
+                    total += 2
+                    num += 2
+                elif cvt_setting[5] == 2:
+                    note_buffer[time_list[-1]].append("/scoreboard players set @a[score_MMS_Service_min="
+                                                      + str(time_list[-1]) + ","
+                                                      + "MMS_Address_min=" + str(play_id)
+                                                      + ",score_MMS_Address=" + str(play_id)
+                                                      + "] MMS_Service -1"
+                                                      )
+                    note_buffer[time_list[-1]].append("/scoreboard players add @a[score_MMS_Service_min=0,"
+                                                      + "MMS_Address_min=" + str(play_id)
+                                                      + ",score_MMS_Address=" + str(play_id)
+                                                      + "] MMS_Service 1")
+                    total += 2
+                    num += 2
+            else:
+                if cvt_setting[5] == 1:
+                    note_buffer[time_list[-1]].append("/scoreboard players set @a[scores={MMS_Service="
+                                                      + str(time_list[-1])
+                                                      + "..}] MMS_Service -1"
+                                                      )
+                    note_buffer[time_list[-1]].append("/scoreboard players add @a[scores={MMS_Service=0..}] MMS_Service 1")
+                    total += 2
+                    num += 2
+                elif cvt_setting[5] == 2:
+                    note_buffer[time_list[-1]].append("/scoreboard players set @a[scores={MMS_Service="
+                                                      + str(time_list[-1]) + "..,"
+                                                      + "MMS_Address=" + str(play_id) + "}] MMS_Service -1"
+                                                      )
+                    note_buffer[time_list[-1]].append("/scoreboard players add @a[scores={MMS_Service=0..,"
+                                                      + "MMS_Address=" + str(play_id)
+                                                      + "}] MMS_Service 1")
+                    total += 2
+                    num += 2
         else:
             if cvt_setting[5] == 1:
                 note_buffer[time_list[-1]].append("/scoreboard players set @a[scores={MMS_Service="
@@ -512,7 +530,6 @@ def convertor(midi_path, midi_name, cvt_setting):
                 if cvt_setting[7] == 1:
                     total += 2
         if cvt_setting[7] == 0:
-            tick_time = 0
             del_list = []
             s = (structure["size"][0].value,
                  structure["size"][1].value,
@@ -553,13 +570,15 @@ def convertor(midi_path, midi_name, cvt_setting):
                     })
                 )
             i = 1
+            real_time = 0
             for source_time in time_list:
                 for n, cmd in enumerate(note_buffer[source_time]):
                     if structure["structure"]["palette"]["default"]["block_position_data"].get(str(list_position(s, p))) and check(s, p):
                         if cvt_setting[5] != 0 or n != 0:
                             output_time = 0
                         else:
-                            output_time = source_time - tick_time
+                            output_time = source_time - real_time
+                        real_time += output_time
                         structure["structure"]["palette"]["default"]["block_position_data"][str(list_position(s, p))]["block_entity_data"]["Command"] = TAG_String(cmd)
                         structure["structure"]["palette"]["default"]["block_position_data"][str(list_position(s, p))]["block_entity_data"]["TickDelay"] = TAG_Int(output_time)
                         if cvt_setting[6]:
@@ -586,7 +605,6 @@ def convertor(midi_path, midi_name, cvt_setting):
                         progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
                     else:
                         break
-                tick_time = source_time
             for n in range(h, -1, -1):
                 if n not in del_list:
                     if str(n) in structure["structure"]["palette"]["default"]["block_position_data"]:
@@ -613,21 +631,33 @@ def convertor(midi_path, midi_name, cvt_setting):
             with open(output_name + "/manifest.json", "w") as io:
                 io.write(dump_bytes(manifest))
         elif cvt_setting[7] == 2:
-            if path.exists(output_name):
-                rmtree(output_name)
-            makedirs(output_name)
-            makedirs(output_name + "/data")
-            makedirs(output_name + "/data/mms")
-            makedirs(output_name + "/data/mms/functions")
-            with open(output_name + "/data/mms/functions/player.mcfunction", "w", encoding="utf-8") as io:
-                for source_time in time_list:
-                    for cmd in note_buffer[source_time]:
-                        io.write(cmd[1:] + "\n")
-                        progress += 1
-                        progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
-            with open(output_name + "/pack.mcmeta", "w") as io:
-                io.write(dump_bytes(behavior))
-        elif state[3][7] == 3:
+            if "old_edition" in asset_list["profile"][cvt_setting[11]][1]["description"]["feature"]:
+                if path.exists(output_name):
+                    rmtree(output_name)
+                makedirs(output_name)
+                makedirs(output_name + "/mms")
+                with open(output_name + "/mms/player.mcfunction", "w", encoding="utf-8") as io:
+                    for source_time in time_list:
+                        for cmd in note_buffer[source_time]:
+                            io.write(cmd[1:] + "\n")
+                            progress += 1
+                            progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
+            else:
+                if path.exists(output_name):
+                    rmtree(output_name)
+                makedirs(output_name)
+                makedirs(output_name + "/data")
+                makedirs(output_name + "/data/mms")
+                makedirs(output_name + "/data/mms/functions")
+                with open(output_name + "/data/mms/functions/player.mcfunction", "w", encoding="utf-8") as io:
+                    for source_time in time_list:
+                        for cmd in note_buffer[source_time]:
+                            io.write(cmd[1:] + "\n")
+                            progress += 1
+                            progress_bar(message_id, "正在转换 " + midi_name[0:-4], progress, total)
+                with open(output_name + "/pack.mcmeta", "w") as io:
+                    io.write(dump_bytes(behavior))
+        elif cvt_setting[7] == 3:
             progress_bar(message_id, "正在连接 " + asset_list["serial_list"][state[3][8]][1], progress, total)
             with Serial(asset_list["serial_list"][state[3][8]][0], baudrate=9600, parity=PARITY_EVEN) as device:
                 if device.is_open:
@@ -676,6 +706,13 @@ def convertor(midi_path, midi_name, cvt_setting):
             if convertor_state is True:
                 convertor_state = "未知错误"
             message_list.append(("因" + convertor_state + "无法转换 " + midi_name[0:-4], task_id))
+
+def round_45(i, n=0):
+    i = int(i * 10 ** int(n + 1))
+    if i % 10 >= 5:
+        i += 10
+    i = int(i / 10)
+    return float(i / (10 ** int(n)))
 
 def progress_bar(mess_id, title, pss, tal):
     try:
@@ -1027,12 +1064,12 @@ def setting_blit(setting):
     file_offset = 0
     setting_num = len(setting)
     if setting_num >= 10:
-        if state[9] != -1 and state[1][0] > round((setting_num - 1) * state[9]):
+        if state[9] != -1 and state[1][0] > round_45((setting_num - 1) * state[9]):
             state[1][2] = state[1][0]
             state[1][0] -= 1
             if state[1][1] > 0:
                 state[1][1] -= 1
-        elif state[9] != -1 and state[1][0] < round((setting_num - 1) * state[9]):
+        elif state[9] != -1 and state[1][0] < round_45((setting_num - 1) * state[9]):
             state[1][2] = state[1][0]
             state[1][0] += 1
             if state[1][1] < 9:
@@ -1245,7 +1282,7 @@ try:
                 window.blit(asset_list["blur_pic"][0], (0, 0))
                 for num_line, line in enumerate(asset_list["mms_license"][0]):
                     text_surface = asset_list["fontL"].render(line, True, (255, 255, 255))
-                    window.blit(text_surface, (round((800 - text_surface.get_size()[0]) / 2), round((450 - asset_list["mms_license"][1] * 22) / 2 + num_line * 22)))
+                    window.blit(text_surface, (round_45((800 - text_surface.get_size()[0]) / 2), round_45((450 - asset_list["mms_license"][1] * 22) / 2 + num_line * 22)))
             else:
                 state[0] = 3
         elif state[0] == 3:
@@ -1338,7 +1375,7 @@ try:
             setting_text.append(["忽略更新", 1])
             setting_text[0][0] += str(state[5]["version"]) + "-" + str(state[5]["edition"])
             if state[6][0] != state[6][1]:
-                setting_text[0][0] += "   " + str(round(state[6][0] / 1048576, 2)) + "/" + str(round(state[6][1] / 1048576, 2)) + "MB"
+                setting_text[0][0] += "   " + str(round_45(state[6][0] / 1048576, 2)) + "/" + str(round_45(state[6][1] / 1048576, 2)) + "MB"
             setting_text += state[5]["feature"]
             setting_blit(setting_text)
         display.flip()
